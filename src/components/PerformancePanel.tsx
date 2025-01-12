@@ -20,6 +20,20 @@ const PerformancePanel: React.FC = () => {
     }
   };
 
+  const performanceMetrics = [
+    { key: "dnsTime", label: "DNS 解析", unit: "ms" },
+    { key: "tcpTime", label: "TCP 连接", unit: "ms" },
+    { key: "requestTime", label: "请求响应", unit: "ms" },
+    { key: "domTime", label: "DOM 解析", unit: "ms" },
+    { key: "loadTime", label: "总加载时间", unit: "ms" },
+    {
+      key: "resource",
+      label: "资源数量/大小",
+      format: (p: PagePerformance) =>
+        `${p.resourceCount}个 / ${p.resourceSize.toFixed(2)}KB`,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
@@ -27,49 +41,32 @@ const PerformancePanel: React.FC = () => {
         <button
           onClick={handleCheck}
           disabled={isLoading}
-          className="btn-secondary text-sm"
+          className="text-sm btn-secondary"
         >
           {isLoading ? "检测中..." : "检测性能"}
         </button>
       </div>
 
       {error && (
-        <div className="text-sm text-red-500 bg-red-50 p-3 rounded-md">
+        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
           {error}
         </div>
       )}
 
       {performance && (
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">DNS 解析</span>
-            <p className="font-medium">{performance.dnsTime.toFixed(2)}ms</p>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">TCP 连接</span>
-            <p className="font-medium">{performance.tcpTime.toFixed(2)}ms</p>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">请求响应</span>
-            <p className="font-medium">
-              {performance.requestTime.toFixed(2)}ms
-            </p>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">DOM 解析</span>
-            <p className="font-medium">{performance.domTime.toFixed(2)}ms</p>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">总加载时间</span>
-            <p className="font-medium">{performance.loadTime.toFixed(2)}ms</p>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-md">
-            <span className="text-gray-600">资源数量/大小</span>
-            <p className="font-medium">
-              {performance.resourceCount}个 /{" "}
-              {performance.resourceSize.toFixed(2)}KB
-            </p>
-          </div>
+          {performanceMetrics.map((metric) => (
+            <div key={metric.key} className="p-2 bg-gray-50 rounded-md">
+              <span className="text-gray-600">{metric.label}</span>
+              <p className="font-medium">
+                {metric.format
+                  ? metric.format(performance)
+                  : `${performance[metric.key as keyof PagePerformance].toFixed(
+                      2
+                    )}${metric.unit}`}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>
