@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { clearDomainCache } from "../utils/cacheUtils";
 import type { DataType } from "../types";
+import { getMessage } from "../utils/i18n";
 
 const CacheClearButton: React.FC = () => {
   const [currentDomain, setCurrentDomain] = useState<string>("");
@@ -9,10 +10,10 @@ const CacheClearButton: React.FC = () => {
   const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
 
   const dataTypeOptions: { value: DataType; label: string }[] = [
-    { value: "cache", label: "缓存" },
-    { value: "cookies", label: "Cookie" },
-    { value: "localStorage", label: "本地存储" },
-    { value: "serviceWorkers", label: "Service Worker" },
+    { value: "cache", label: getMessage("cache") },
+    { value: "cookies", label: getMessage("cookies") },
+    { value: "localStorage", label: getMessage("localStorage") },
+    { value: "serviceWorkers", label: getMessage("serviceWorker") },
   ];
 
   const sensitiveDataTypes: DataType[] = [
@@ -102,7 +103,7 @@ const CacheClearButton: React.FC = () => {
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium">选择要清除的数据：</p>
+        <p className="text-sm font-medium">{getMessage("selectDataTypes")}</p>
         <div className="flex flex-wrap gap-2">
           {dataTypeOptions.map(({ value, label }) => (
             <label

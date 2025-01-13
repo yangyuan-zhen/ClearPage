@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "网页缓存清理",
+  "name": "__MSG_appName__",
   "version": "1.0.0",
-  "description": "一键清理浏览器缓存的插件",
+  "description": "__MSG_appDescription__",
+  "default_locale": "zh_CN",
   "permissions": ["browsingData", "activeTab", "storage", "tabs", "scripting"],
   "host_permissions": ["<all_urls>"],
   "action": {

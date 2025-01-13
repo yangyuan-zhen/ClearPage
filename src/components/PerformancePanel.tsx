@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getPagePerformance } from "../utils/performanceUtils";
 import type { PagePerformance } from "../utils/performanceUtils";
+import { getMessage } from "../utils/i18n";
 
 const PerformancePanel: React.FC = () => {
   const [performance, setPerformance] = useState<PagePerformance | null>(null);
@@ -21,14 +22,14 @@ const PerformancePanel: React.FC = () => {
   };
 
   const performanceMetrics = [
-    { key: "dnsTime", label: "DNS 解析", unit: "ms" },
-    { key: "tcpTime", label: "TCP 连接", unit: "ms" },
-    { key: "requestTime", label: "请求响应", unit: "ms" },
-    { key: "domTime", label: "DOM 解析", unit: "ms" },
-    { key: "loadTime", label: "总加载时间", unit: "ms" },
+    { key: "dnsTime", label: getMessage("dnsTime"), unit: "ms" },
+    { key: "tcpTime", label: getMessage("tcpTime"), unit: "ms" },
+    { key: "requestTime", label: getMessage("requestTime"), unit: "ms" },
+    { key: "domTime", label: getMessage("domTime"), unit: "ms" },
+    { key: "loadTime", label: getMessage("loadTime"), unit: "ms" },
     {
       key: "resource",
-      label: "资源数量/大小",
+      label: getMessage("resourceInfo"),
       format: (p: PagePerformance) =>
         `${p.resourceCount}个 / ${p.resourceSize.toFixed(2)}KB`,
     },

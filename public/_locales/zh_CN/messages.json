@@ -1,0 +1,73 @@
+{
+  "appName": {
+    "message": "网页缓存清理工具"
+  },
+  "appDescription": {
+    "message": "一键清理特定网站的缓存、Cookie等浏览数据"
+  },
+  "currentDomain": {
+    "message": "当前域名"
+  },
+  "selectDataTypes": {
+    "message": "选择要清除的数据"
+  },
+  "cache": {
+    "message": "缓存"
+  },
+  "cookies": {
+    "message": "Cookie"
+  },
+  "localStorage": {
+    "message": "本地存储"
+  },
+  "serviceWorker": {
+    "message": "Service Worker"
+  },
+  "clearData": {
+    "message": "清除数据"
+  },
+  "clearing": {
+    "message": "清除中..."
+  },
+  "clearSuccess": {
+    "message": "清除成功！"
+  },
+  "clearFailed": {
+    "message": "清除失败: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "sensitiveWarning": {
+    "message": "⚠️ 注意：清除选中的数据可能会导致登录状态丢失，需要重新登录网站"
+  },
+  "performanceCheck": {
+    "message": "页面性能检测"
+  },
+  "checking": {
+    "message": "检测中..."
+  },
+  "checkPerformance": {
+    "message": "检测性能"
+  },
+  "dnsTime": {
+    "message": "DNS 解析"
+  },
+  "tcpTime": {
+    "message": "TCP 连接"
+  },
+  "requestTime": {
+    "message": "请求响应"
+  },
+  "domTime": {
+    "message": "DOM 解析"
+  },
+  "loadTime": {
+    "message": "总加载时间"
+  },
+  "resourceInfo": {
+    "message": "资源数量/大小"
+  }
+}
