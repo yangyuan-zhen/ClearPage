@@ -69,5 +69,32 @@
   },
   "resourceInfo": {
     "message": "资源数量/大小"
+  },
+  "sensitiveDataWarningTitle": {
+    "message": "警告：您选择了以下敏感数据："
+  },
+  "sensitiveDataWarningConsequences": {
+    "message": "\n清除这些数据可能会导致："
+  },
+  "loginLoss": {
+    "message": "- 网站登录状态丢失"
+  },
+  "formDataLoss": {
+    "message": "- 保存的表单数据消失"
+  },
+  "reloginRequired": {
+    "message": "- 需要重新登录网站"
+  },
+  "pageWillRefresh": {
+    "message": "\n页面将会自动刷新，确定要继续吗？"
+  },
+  "clearError": {
+    "message": "清除时发生错误"
+  },
+  "performanceError": {
+    "message": "获取性能数据失败"
+  },
+  "appTitle": {
+    "message": "网页缓存清理"
   }
 }

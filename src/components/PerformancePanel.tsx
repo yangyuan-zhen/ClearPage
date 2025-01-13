@@ -38,19 +38,21 @@ const PerformancePanel: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-medium">页面性能检测</h2>
+        <h2 className="text-lg font-medium">
+          {getMessage("performanceCheck")}
+        </h2>
         <button
           onClick={handleCheck}
           disabled={isLoading}
           className="text-sm btn-secondary"
         >
-          {isLoading ? "检测中..." : "检测性能"}
+          {isLoading ? getMessage("checking") : getMessage("checkPerformance")}
         </button>
       </div>
 
       {error && (
         <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-          {error}
+          {getMessage("performanceError")}
         </div>
       )}
 

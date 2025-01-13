@@ -5,12 +5,14 @@ import PerformancePanel from "./PerformancePanel";
 const App: React.FC = () => {
   return (
     <div className="min-w-[350px] min-h-[200px] bg-white">
-      <header className="bg-primary text-white p-4">
-        <h1 className="text-lg font-bold">缓存清理工具</h1>
+      <header className="p-4 text-white bg-primary">
+        <h1 className="text-lg font-bold">
+          {chrome.i18n.getMessage("appTitle")}
+        </h1>
       </header>
-      <main className="p-4 flex flex-col gap-6">
+      <main className="flex flex-col gap-6 p-4">
         <CacheClearButton />
-        <div className="border-t pt-4">
+        <div className="pt-4 border-t">
           <PerformancePanel />
         </div>
       </main>

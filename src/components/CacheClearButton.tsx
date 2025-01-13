@@ -49,18 +49,18 @@ const CacheClearButton: React.FC = () => {
   const handleClearCache = async () => {
     if (hasSensitiveData) {
       const confirmMessage = [
-        "警告：您选择了以下敏感数据：",
+        getMessage("sensitiveDataWarningTitle"),
         selectedTypes
           .filter((type) => sensitiveDataTypes.includes(type))
           .map(
             (type) => dataTypeOptions.find((opt) => opt.value === type)?.label
           )
           .join(", "),
-        "\n清除这些数据可能会导致：",
-        "- 网站登录状态丢失",
-        "- 保存的表单数据消失",
-        "- 需要重新登录网站",
-        "\n页面将会自动刷新，确定要继续吗？",
+        getMessage("sensitiveDataWarningConsequences"),
+        getMessage("loginLoss"),
+        getMessage("formDataLoss"),
+        getMessage("reloginRequired"),
+        getMessage("pageWillRefresh"),
       ].join("\n");
 
       if (!window.confirm(confirmMessage)) {
@@ -78,7 +78,7 @@ const CacheClearButton: React.FC = () => {
       });
 
       if (result.success) {
-        setMessage("清除成功！");
+        setMessage(getMessage("clearSuccess"));
         const [tab] = await chrome.tabs.query({
           active: true,
           currentWindow: true,
@@ -87,10 +87,10 @@ const CacheClearButton: React.FC = () => {
           await chrome.tabs.reload(tab.id);
         }
       } else {
-        setMessage(`清除失败: ${result.error}`);
+        setMessage(getMessage("clearFailed", [result.error || ""]));
       }
-    } catch (error) {
-      setMessage("清除时发生错误");
+    } catch (error: any) {
+      setMessage(getMessage("clearError", [error.message || ""]));
     } finally {
       setIsLoading(false);
     }
@@ -98,8 +98,9 @@ const CacheClearButton: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="px-3 py-2 border rounded-md bg-gray-50">
-        当前域名: <span data-testid="domain-text">{currentDomain}</span>
+      <div className="px-3 py-2 bg-gray-50 rounded-md border">
+        {getMessage("currentDomain")}:{" "}
+        <span data-testid="domain-text">{currentDomain}</span>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -108,7 +109,7 @@ const CacheClearButton: React.FC = () => {
           {dataTypeOptions.map(({ value, label }) => (
             <label
               key={value}
-              className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+              className="flex gap-2 items-center px-3 py-2 rounded-md border cursor-pointer hover:bg-gray-50"
             >
               <input
                 type="checkbox"
@@ -123,8 +124,8 @@ const CacheClearButton: React.FC = () => {
       </div>
 
       {hasSensitiveData && (
-        <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
-          ⚠️ 注意：清除选中的数据可能会导致登录状态丢失，需要重新登录网站
+        <div className="p-3 text-sm text-amber-600 bg-amber-50 rounded-md border border-amber-200">
+          {getMessage("sensitiveWarning")}
         </div>
       )}
 
@@ -137,14 +138,16 @@ const CacheClearButton: React.FC = () => {
             : ""
         }`}
       >
-        {isLoading ? "清除中..." : "清除数据"}
+        {isLoading ? getMessage("clearing") : getMessage("clearData")}
       </button>
 
       {message && (
         <p
           data-testid="status-message"
           className={`text-sm ${
-            message.includes("失败") ? "text-red-500" : "text-green-500"
+            message.includes(getMessage("clearFailed"))
+              ? "text-red-500"
+              : "text-green-500"
           }`}
         >
           {message}

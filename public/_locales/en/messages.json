@@ -1,1 +1,100 @@
- 
+{
+  "appName": {
+    "message": "Web Cache Cleaner"
+  },
+  "appDescription": {
+    "message": "Clean cache, cookies and other browsing data for specific websites"
+  },
+  "currentDomain": {
+    "message": "Current Domain"
+  },
+  "selectDataTypes": {
+    "message": "Select data types to clear"
+  },
+  "cache": {
+    "message": "Cache"
+  },
+  "cookies": {
+    "message": "Cookies"
+  },
+  "localStorage": {
+    "message": "Local Storage"
+  },
+  "serviceWorker": {
+    "message": "Service Worker"
+  },
+  "clearData": {
+    "message": "Clear Data"
+  },
+  "clearing": {
+    "message": "Clearing..."
+  },
+  "clearSuccess": {
+    "message": "Cleared successfully!"
+  },
+  "clearFailed": {
+    "message": "Clear failed: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "sensitiveWarning": {
+    "message": "⚠️ Warning: Clearing selected data may cause you to be logged out and need to log in again"
+  },
+  "performanceCheck": {
+    "message": "Performance Check"
+  },
+  "checking": {
+    "message": "Checking..."
+  },
+  "checkPerformance": {
+    "message": "Check Performance"
+  },
+  "dnsTime": {
+    "message": "DNS Lookup"
+  },
+  "tcpTime": {
+    "message": "TCP Connection"
+  },
+  "requestTime": {
+    "message": "Request Time"
+  },
+  "domTime": {
+    "message": "DOM Parse"
+  },
+  "loadTime": {
+    "message": "Total Load Time"
+  },
+  "resourceInfo": {
+    "message": "Resources Count/Size"
+  },
+  "sensitiveDataWarningTitle": {
+    "message": "Warning: You have selected the following sensitive data:"
+  },
+  "sensitiveDataWarningConsequences": {
+    "message": "\nClearing these data may result in:"
+  },
+  "loginLoss": {
+    "message": "- Loss of website login status"
+  },
+  "formDataLoss": {
+    "message": "- Loss of saved form data"
+  },
+  "reloginRequired": {
+    "message": "- Need to log in again"
+  },
+  "pageWillRefresh": {
+    "message": "\nThe page will refresh automatically, do you want to continue?"
+  },
+  "clearError": {
+    "message": "Error occurred while clearing"
+  },
+  "performanceError": {
+    "message": "Failed to get performance data"
+  },
+  "appTitle": {
+    "message": "Cache Cleaner"
+  }
+}
