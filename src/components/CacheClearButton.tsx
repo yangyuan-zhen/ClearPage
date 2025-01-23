@@ -71,25 +71,46 @@ const CacheClearButton: React.FC = () => {
     setMessage("");
 
     try {
-      const result = await clearDomainCache({
-        domain: currentDomain,
-        dataTypes: selectedTypes,
+      // 设置清理选项
+      const options = {
+        since: 0, // 清理所有时间的数据
+        origins: currentDomain
+          ? [`https://${currentDomain}`, `http://${currentDomain}`]
+          : undefined,
+      };
+
+      // 根据选择的类型执行对应的清理操作
+      const cleanupPromises = selectedTypes.map((type) => {
+        switch (type) {
+          case "cache":
+            return chrome.browsingData.removeCache(options);
+          case "cookies":
+            return chrome.browsingData.removeCookies(options);
+          case "localStorage":
+            return chrome.browsingData.removeLocalStorage(options);
+          case "serviceWorkers":
+            return chrome.browsingData.removeServiceWorkers(options);
+          default:
+            return Promise.resolve();
+        }
       });
 
-      if (result.success) {
-        setMessage("清除成功！");
-        const [tab] = await chrome.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        if (tab?.id) {
-          await chrome.tabs.reload(tab.id);
-        }
-      } else {
-        setMessage(`清除失败: ${result.error}`);
+      await Promise.all(cleanupPromises);
+      setMessage("清除成功！");
+
+      // 刷新当前页面
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      if (tab?.id) {
+        await chrome.tabs.reload(tab.id);
       }
     } catch (error) {
-      setMessage("清除时发生错误");
+      console.error("清理数据失败:", error);
+      setMessage(
+        `清除失败: ${error instanceof Error ? error.message : "未知错误"}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +118,7 @@ const CacheClearButton: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="px-3 py-2 border rounded-md bg-gray-50">
+      <div className="px-3 py-2 bg-gray-50 rounded-md border">
         当前域名: <span data-testid="domain-text">{currentDomain}</span>
       </div>
 
@@ -107,7 +128,7 @@ const CacheClearButton: React.FC = () => {
           {dataTypeOptions.map(({ value, label }) => (
             <label
               key={value}
-              className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+              className="flex gap-2 items-center px-3 py-2 rounded-md border cursor-pointer hover:bg-gray-50"
             >
               <input
                 type="checkbox"
@@ -122,7 +143,7 @@ const CacheClearButton: React.FC = () => {
       </div>
 
       {hasSensitiveData && (
-        <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
+        <div className="p-3 text-sm text-amber-600 bg-amber-50 rounded-md border border-amber-200">
           ⚠️ 注意：清除选中的数据可能会导致登录状态丢失，需要重新登录网站
         </div>
       )}
