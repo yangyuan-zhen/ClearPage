@@ -31,7 +31,7 @@ const PerformancePanel: React.FC = () => {
       key: "resource",
       label: getMessage("resourceInfo"),
       format: (p: PagePerformance) =>
-        `${p.resourceCount}个 / ${p.resourceSize.toFixed(2)}KB`,
+        `${p.resourceCount}个 / ${p.resourceSize.toFixed(2)}KB（不含缓存）`,
     },
   ];
 

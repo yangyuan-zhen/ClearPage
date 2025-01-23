@@ -20,13 +20,24 @@ export const getPagePerformance = async (): Promise<PagePerformance> => {
 
         const result = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            world: 'MAIN',
+            world: 'ISOLATED',
             func: () => {
                 const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
                 if (!nav) throw new Error('无法获取网页性能数据');
 
-                const resources = performance.getEntriesByType('resource');
-                if (!resources) throw new Error('无法获取资源性能数据');
+                // 获取所有资源性能数据
+                const allResources = [
+                    ...(performance.getEntriesByType('navigation') as PerformanceResourceTiming[]),
+                    ...(performance.getEntriesByType('resource') as PerformanceResourceTiming[])
+                ];
+
+                // 只统计从服务器实际传输的资源（不包括从浏览器缓存加载的资源）
+                const validResources = allResources.filter(r => r.transferSize > 0);
+
+                // 计算实际从服务器传输的总大小
+                const totalSize = validResources.reduce((total, resource) => {
+                    return total + resource.transferSize;  // transferSize 为资源的实际传输大小
+                }, 0);
 
                 return {
                     dnsTime: nav.domainLookupEnd - nav.domainLookupStart,
@@ -34,9 +45,8 @@ export const getPagePerformance = async (): Promise<PagePerformance> => {
                     requestTime: nav.responseEnd - nav.requestStart,
                     domTime: nav.domContentLoadedEventEnd - nav.domContentLoadedEventStart,
                     loadTime: nav.loadEventEnd - nav.startTime,
-                    resourceCount: resources.length,
-                    resourceSize: resources.reduce((total, resource) =>
-                        total + ((resource as PerformanceResourceTiming).transferSize || 0), 0) / 1024
+                    resourceCount: validResources.length,  // 实际从服务器加载的资源数量
+                    resourceSize: totalSize / 1024  // 转换为 KB
                 };
             }
         });
