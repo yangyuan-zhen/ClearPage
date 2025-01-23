@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { clearDomainCache } from "../utils/cacheUtils";
 import type { DataType } from "../types";
+import { getMessage } from "../utils/i18n";
 
 const CacheClearButton: React.FC = () => {
   const [currentDomain, setCurrentDomain] = useState<string>("");
@@ -9,10 +10,10 @@ const CacheClearButton: React.FC = () => {
   const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
 
   const dataTypeOptions: { value: DataType; label: string }[] = [
-    { value: "cache", label: "缓存" },
-    { value: "cookies", label: "Cookie" },
-    { value: "localStorage", label: "本地存储" },
-    { value: "serviceWorkers", label: "Service Worker" },
+    { value: "cache", label: getMessage("cache") },
+    { value: "cookies", label: getMessage("cookies") },
+    { value: "localStorage", label: getMessage("localStorage") },
+    { value: "serviceWorkers", label: getMessage("serviceWorker") },
   ];
 
   const sensitiveDataTypes: DataType[] = [
@@ -48,18 +49,18 @@ const CacheClearButton: React.FC = () => {
   const handleClearCache = async () => {
     if (hasSensitiveData) {
       const confirmMessage = [
-        "警告：您选择了以下敏感数据：",
+        getMessage("sensitiveDataWarningTitle"),
         selectedTypes
           .filter((type) => sensitiveDataTypes.includes(type))
           .map(
             (type) => dataTypeOptions.find((opt) => opt.value === type)?.label
           )
           .join(", "),
-        "\n清除这些数据可能会导致：",
-        "- 网站登录状态丢失",
-        "- 保存的表单数据消失",
-        "- 需要重新登录网站",
-        "\n页面将会自动刷新，确定要继续吗？",
+        getMessage("sensitiveDataWarningConsequences"),
+        getMessage("loginLoss"),
+        getMessage("formDataLoss"),
+        getMessage("reloginRequired"),
+        getMessage("pageWillRefresh"),
       ].join("\n");
 
       if (!window.confirm(confirmMessage)) {
@@ -71,46 +72,25 @@ const CacheClearButton: React.FC = () => {
     setMessage("");
 
     try {
-      // 设置清理选项
-      const options = {
-        since: 0, // 清理所有时间的数据
-        origins: currentDomain
-          ? [`https://${currentDomain}`, `http://${currentDomain}`]
-          : undefined,
-      };
+      const result = await clearDomainCache({
+        domain: currentDomain,
+        dataTypes: selectedTypes,
+      });
 
-      // 根据选择的类型执行对应的清理操作
-      const cleanupPromises = selectedTypes.map((type) => {
-        switch (type) {
-          case "cache":
-            return chrome.browsingData.removeCache(options);
-          case "cookies":
-            return chrome.browsingData.removeCookies(options);
-          case "localStorage":
-            return chrome.browsingData.removeLocalStorage(options);
-          case "serviceWorkers":
-            return chrome.browsingData.removeServiceWorkers(options);
-          default:
-            return Promise.resolve();
+      if (result.success) {
+        setMessage(getMessage("clearSuccess"));
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (tab?.id) {
+          await chrome.tabs.reload(tab.id);
         }
-      });
-
-      await Promise.all(cleanupPromises);
-      setMessage("清除成功！");
-
-      // 刷新当前页面
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (tab?.id) {
-        await chrome.tabs.reload(tab.id);
+      } else {
+        setMessage(getMessage("clearFailed", [result.error || ""]));
       }
-    } catch (error) {
-      console.error("清理数据失败:", error);
-      setMessage(
-        `清除失败: ${error instanceof Error ? error.message : "未知错误"}`
-      );
+    } catch (error: any) {
+      setMessage(getMessage("clearError", [error.message || ""]));
     } finally {
       setIsLoading(false);
     }
@@ -119,11 +99,12 @@ const CacheClearButton: React.FC = () => {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="px-3 py-2 bg-gray-50 rounded-md border">
-        当前域名: <span data-testid="domain-text">{currentDomain}</span>
+        {getMessage("currentDomain")}:{" "}
+        <span data-testid="domain-text">{currentDomain}</span>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium">选择要清除的数据：</p>
+        <p className="text-sm font-medium">{getMessage("selectDataTypes")}</p>
         <div className="flex flex-wrap gap-2">
           {dataTypeOptions.map(({ value, label }) => (
             <label
@@ -144,7 +125,7 @@ const CacheClearButton: React.FC = () => {
 
       {hasSensitiveData && (
         <div className="p-3 text-sm text-amber-600 bg-amber-50 rounded-md border border-amber-200">
-          ⚠️ 注意：清除选中的数据可能会导致登录状态丢失，需要重新登录网站
+          {getMessage("sensitiveWarning")}
         </div>
       )}
 
@@ -157,14 +138,16 @@ const CacheClearButton: React.FC = () => {
             : ""
         }`}
       >
-        {isLoading ? "清除中..." : "清除数据"}
+        {isLoading ? getMessage("clearing") : getMessage("clearData")}
       </button>
 
       {message && (
         <p
           data-testid="status-message"
           className={`text-sm ${
-            message.includes("失败") ? "text-red-500" : "text-green-500"
+            message.includes(getMessage("clearFailed"))
+              ? "text-red-500"
+              : "text-green-500"
           }`}
         >
           {message}
