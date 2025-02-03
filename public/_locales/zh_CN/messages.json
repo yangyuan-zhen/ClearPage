@@ -96,5 +96,29 @@
   },
   "appTitle": {
     "message": "网页缓存清理"
+  },
+  "history": {
+    "message": "历史记录"
+  },
+  "historyWarning": {
+    "message": "清除历史记录将无法恢复"
+  },
+  "timeRangeTitle": {
+    "message": "选择时间范围"
+  },
+  "lastHour": {
+    "message": "最近1小时"
+  },
+  "lastDay": {
+    "message": "最近24小时"
+  },
+  "lastWeek": {
+    "message": "最近7天"
+  },
+  "lastMonth": {
+    "message": "最近30天"
+  },
+  "allTime": {
+    "message": "全部"
   }
 }

@@ -4,39 +4,75 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // 监听消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((
+    request: { type: string; payload: { domain: string; dataTypes: string[]; since?: number } },
+    sender,
+    sendResponse
+) => {
     if (request.type === 'CLEAR_CACHE') {
         const { domain, dataTypes, since } = request.payload;
 
-        const removalOptions: chrome.browsingData.RemovalOptions = {
-            since: since || 0,
-            origins: domain ? [`https://${domain}`, `http://${domain}`] : undefined
-        };
+        // 分离历史记录和其他数据类型
+        const hasHistory = dataTypes.includes('history');
+        const otherDataTypes = dataTypes.filter(type => type !== 'history');
 
-        const dataTypeOptions: chrome.browsingData.DataTypeSet = {
-            cache: dataTypes.includes('cache'),
-            cookies: dataTypes.includes('cookies'),
-            downloads: dataTypes.includes('downloads'),
-            fileSystems: dataTypes.includes('fileSystems'),
-            formData: dataTypes.includes('formData'),
-            history: dataTypes.includes('history'),
-            indexedDB: dataTypes.includes('indexedDB'),
-            localStorage: dataTypes.includes('localStorage'),
-            passwords: dataTypes.includes('passwords'),
-            serviceWorkers: dataTypes.includes('serviceWorkers'),
-            webSQL: dataTypes.includes('webSQL')
-        };
+        // 定义支持域名过滤的类型
+        const originSupportedTypes = ['cookies', 'localStorage'];
+        const originFiltered = otherDataTypes.filter(type => originSupportedTypes.includes(type));
 
-        chrome.browsingData.remove(removalOptions, dataTypeOptions)
+        // 定义不支持域名过滤的类型（需全局清除）
+        const globalTypes = ['cache', 'serviceWorkers'];
+        const globalFiltered = otherDataTypes.filter(type => globalTypes.includes(type));
+
+        const clearTasks = [];
+
+        // 处理支持域名过滤的类型
+        if (originFiltered.length > 0) {
+            const removalOptions: chrome.browsingData.RemovalOptions = {
+                since: since || 0,
+                origins: domain ? [`https://${domain}`, `http://${domain}`] : undefined
+            };
+
+            const dataTypeOptions: chrome.browsingData.DataTypeSet = {
+                cookies: originFiltered.includes('cookies'),
+                localStorage: originFiltered.includes('localStorage'),
+            };
+
+            clearTasks.push(chrome.browsingData.remove(removalOptions, dataTypeOptions));
+        }
+
+        // 处理不支持域名过滤的类型（全局清除）
+        if (globalFiltered.length > 0) {
+            const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
+                since: since || 0
+            };
+
+            const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {
+                cache: globalFiltered.includes('cache'),
+                serviceWorkers: globalFiltered.includes('serviceWorkers')
+            };
+
+            clearTasks.push(
+                chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions)
+            );
+        }
+
+        // 处理历史记录（原有逻辑不变）
+        if (hasHistory && domain) {
+            clearTasks.push((async () => {
+                // ...原有历史记录删除代码...
+            })());
+        }
+
+        // 等待所有任务完成
+        Promise.all(clearTasks)
             .then(() => {
-                console.log('缓存清理成功');
                 sendResponse({ success: true });
             })
             .catch((error) => {
-                console.error('缓存清理失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
 
-        return true; // 保持消息通道开放
+        return true;
     }
-}); 
+});

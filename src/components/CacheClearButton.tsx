@@ -1,30 +1,60 @@
 import React, { useState, useEffect } from "react";
 import { clearDomainCache } from "../utils/cacheUtils";
-import type { DataType } from "../types";
+import type { DataType, TimeRange } from "../types";
 import { getMessage } from "../utils/i18n";
+
+interface TimeRangeOption {
+  value: TimeRange;
+  label: string;
+  time: number;
+}
 
 const CacheClearButton: React.FC = () => {
   const [currentDomain, setCurrentDomain] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>("day");
 
   const dataTypeOptions: { value: DataType; label: string }[] = [
     { value: "cache", label: getMessage("cache") },
     { value: "cookies", label: getMessage("cookies") },
     { value: "localStorage", label: getMessage("localStorage") },
     { value: "serviceWorkers", label: getMessage("serviceWorker") },
+    { value: "history", label: getMessage("history") },
   ];
 
-  const sensitiveDataTypes: DataType[] = [
-    "cookies",
-    "localStorage",
-    "passwords",
-  ];
+  const sensitiveDataTypes: DataType[] = ["cookies", "localStorage", "history"];
 
   const hasSensitiveData = selectedTypes.some((type) =>
     sensitiveDataTypes.includes(type)
   );
+
+  const timeRangeOptions: TimeRangeOption[] = [
+    {
+      value: "hour" as TimeRange,
+      label: getMessage("lastHour"),
+      time: 60 * 60 * 1000,
+    },
+    {
+      value: "day" as TimeRange,
+      label: getMessage("lastDay"),
+      time: 24 * 60 * 60 * 1000,
+    },
+    {
+      value: "week" as TimeRange,
+      label: getMessage("lastWeek"),
+      time: 7 * 24 * 60 * 60 * 1000,
+    },
+    {
+      value: "month" as TimeRange,
+      label: getMessage("lastMonth"),
+      time: 30 * 24 * 60 * 60 * 1000,
+    },
+    { value: "all" as TimeRange, label: getMessage("allTime"), time: 0 },
+  ];
+
+  const showTimeRangeSelect = selectedTypes.includes("history");
 
   useEffect(() => {
     const getCurrentTab = async () => {
@@ -72,9 +102,17 @@ const CacheClearButton: React.FC = () => {
     setMessage("");
 
     try {
+      const selectedTimeOption = timeRangeOptions.find(
+        (opt) => opt.value === selectedTimeRange
+      );
+      const since = selectedTimeOption
+        ? Date.now() - selectedTimeOption.time
+        : 0;
+
       const result = await clearDomainCache({
         domain: currentDomain,
         dataTypes: selectedTypes,
+        since: selectedTimeRange === "all" ? 0 : since,
       });
 
       if (result.success) {
@@ -122,6 +160,27 @@ const CacheClearButton: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {showTimeRangeSelect && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium">选择时间范围</p>
+          <div className="flex flex-wrap gap-2">
+            {timeRangeOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSelectedTimeRange(value)}
+                className={`px-3 py-1 text-sm rounded-md border ${
+                  selectedTimeRange === value
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {hasSensitiveData && (
         <div className="p-3 text-sm text-amber-600 bg-amber-50 rounded-md border border-amber-200">

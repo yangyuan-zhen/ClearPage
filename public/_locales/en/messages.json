@@ -96,5 +96,11 @@
   },
   "appTitle": {
     "message": "Cache Cleaner"
+  },
+  "history": {
+    "message": "History"
+  },
+  "historyWarning": {
+    "message": "Clearing history cannot be undone"
   }
 }
