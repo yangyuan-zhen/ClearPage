@@ -1,9 +1,9 @@
 {
   "appName": {
-    "message": "Web Cache Cleaner"
+    "message": "Web Data Cleaner"
   },
   "appDescription": {
-    "message": "Clean cache, cookies and other browsing data for specific websites"
+    "message": "Clean website cache, cookies and browsing data with one click"
   },
   "currentDomain": {
     "message": "Current Domain"

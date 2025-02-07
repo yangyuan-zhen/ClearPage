@@ -1,9 +1,9 @@
 {
   "appName": {
-    "message": "网页缓存清理工具"
+    "message": "网页数据清理工具"
   },
   "appDescription": {
-    "message": "一键清理特定网站的缓存、Cookie等浏览数据"
+    "message": "一键清理特定网站的缓存、Cookie等浏览数据，提升浏览体验"
   },
   "currentDomain": {
     "message": "当前域名"
