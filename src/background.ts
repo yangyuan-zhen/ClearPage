@@ -61,12 +61,12 @@ chrome.runtime.onMessage.addListener((
         if (hasHistory && domain) {
             clearTasks.push((async () => {
                 try {
-                    // 先获取指定域名的历史记录
+                    // 先获取所有历史记录
                     const items = await chrome.history.search({
-                        text: domain,
+                        text: '',  // 不使用 text 过滤，获取所有记录
                         startTime: since || 0,
                         endTime: Date.now(),
-                        maxResults: 1000
+                        maxResults: 10000  // 增加搜索结果数量
                     });
 
                     // 过滤出匹配域名的 URL 并删除
@@ -74,15 +74,26 @@ chrome.runtime.onMessage.addListener((
                         .filter(item => {
                             if (!item.url) return false;
                             try {
-                                const url = new URL(item.url);
-                                return url.hostname === domain;
+                                // 使用正则表达式匹配域名
+                                const urlPattern = new RegExp(`^https?://(www\.)?${domain.replace('.', '\\.')}`, 'i');
+                                return urlPattern.test(item.url);
                             } catch {
                                 return false;
                             }
                         })
-                        .map(item => chrome.history.deleteUrl({ url: item.url! }));
+                        .map(item => {
+                            console.log('Deleting history:', item.url); // 添加日志
+                            return chrome.history.deleteUrl({ url: item.url! });
+                        });
+
+                    if (deletePromises.length === 0) {
+                        console.log('No matching history items found for domain:', domain);
+                    } else {
+                        console.log(`Found ${deletePromises.length} history items to delete`);
+                    }
 
                     await Promise.all(deletePromises);
+                    console.log('History deletion completed');
                 } catch (error) {
                     console.error('清除历史记录失败:', error);
                     throw error;
