@@ -57,10 +57,36 @@ chrome.runtime.onMessage.addListener((
             );
         }
 
-        // 处理历史记录（原有逻辑不变）
+        // 处理历史记录
         if (hasHistory && domain) {
             clearTasks.push((async () => {
-                // ...原有历史记录删除代码...
+                try {
+                    // 先获取指定域名的历史记录
+                    const items = await chrome.history.search({
+                        text: domain,
+                        startTime: since || 0,
+                        endTime: Date.now(),
+                        maxResults: 1000
+                    });
+
+                    // 过滤出匹配域名的 URL 并删除
+                    const deletePromises = items
+                        .filter(item => {
+                            if (!item.url) return false;
+                            try {
+                                const url = new URL(item.url);
+                                return url.hostname === domain;
+                            } catch {
+                                return false;
+                            }
+                        })
+                        .map(item => chrome.history.deleteUrl({ url: item.url! }));
+
+                    await Promise.all(deletePromises);
+                } catch (error) {
+                    console.error('清除历史记录失败:', error);
+                    throw error;
+                }
             })());
         }
 

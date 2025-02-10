@@ -112,23 +112,27 @@ const CacheClearButton: React.FC = () => {
       const result = await clearDomainCache({
         domain: currentDomain,
         dataTypes: selectedTypes,
-        since: selectedTimeRange === "all" ? 0 : since,
+        since: since,
       });
 
       if (result.success) {
         setMessage(getMessage("clearSuccess"));
-        const [tab] = await chrome.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        if (tab?.id) {
-          await chrome.tabs.reload(tab.id);
+        if (
+          selectedTypes.some((type) =>
+            ["cache", "cookies", "localStorage", "serviceWorkers"].includes(
+              type
+            )
+          )
+        ) {
+          chrome.tabs.reload();
         }
       } else {
-        setMessage(getMessage("clearFailed", [result.error || ""]));
+        setMessage(getMessage("clearFailed", result.error || ""));
       }
-    } catch (error: any) {
-      setMessage(getMessage("clearError", [error.message || ""]));
+    } catch (error) {
+      setMessage(
+        getMessage("clearFailed", error instanceof Error ? error.message : "")
+      );
     } finally {
       setIsLoading(false);
     }
