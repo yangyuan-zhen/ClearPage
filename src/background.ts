@@ -12,17 +12,13 @@ chrome.runtime.onMessage.addListener((
     if (request.type === 'CLEAR_CACHE') {
         const { domain, dataTypes, since } = request.payload;
 
-        // 分离历史记录和其他数据类型
-        const hasHistory = dataTypes.includes('history');
-        const otherDataTypes = dataTypes.filter(type => type !== 'history');
-
         // 定义支持域名过滤的类型
         const originSupportedTypes = ['cookies', 'localStorage'];
-        const originFiltered = otherDataTypes.filter(type => originSupportedTypes.includes(type));
+        const originFiltered = dataTypes.filter(type => originSupportedTypes.includes(type));
 
         // 定义不支持域名过滤的类型（需全局清除）
         const globalTypes = ['cache', 'serviceWorkers'];
-        const globalFiltered = otherDataTypes.filter(type => globalTypes.includes(type));
+        const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
 
         const clearTasks = [];
 
@@ -55,50 +51,6 @@ chrome.runtime.onMessage.addListener((
             clearTasks.push(
                 chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions)
             );
-        }
-
-        // 处理历史记录
-        if (hasHistory && domain) {
-            clearTasks.push((async () => {
-                try {
-                    // 先获取所有历史记录
-                    const items = await chrome.history.search({
-                        text: '',  // 不使用 text 过滤，获取所有记录
-                        startTime: since || 0,
-                        endTime: Date.now(),
-                        maxResults: 10000  // 增加搜索结果数量
-                    });
-
-                    // 过滤出匹配域名的 URL 并删除
-                    const deletePromises = items
-                        .filter(item => {
-                            if (!item.url) return false;
-                            try {
-                                // 使用正则表达式匹配域名
-                                const urlPattern = new RegExp(`^https?://(www\.)?${domain.replace('.', '\\.')}`, 'i');
-                                return urlPattern.test(item.url);
-                            } catch {
-                                return false;
-                            }
-                        })
-                        .map(item => {
-                            console.log('Deleting history:', item.url); // 添加日志
-                            return chrome.history.deleteUrl({ url: item.url! });
-                        });
-
-                    if (deletePromises.length === 0) {
-                        console.log('No matching history items found for domain:', domain);
-                    } else {
-                        console.log(`Found ${deletePromises.length} history items to delete`);
-                    }
-
-                    await Promise.all(deletePromises);
-                    console.log('History deletion completed');
-                } catch (error) {
-                    console.error('清除历史记录失败:', error);
-                    throw error;
-                }
-            })());
         }
 
         // 等待所有任务完成
