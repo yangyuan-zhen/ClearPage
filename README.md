@@ -1,5 +1,7 @@
 # 网页数据清理插件
 
+中文 | [English](./README_EN.md)
+
 一个简单高效的浏览器扩展，帮助用户快速清理特定网站的缓存、Cookie 等浏览数据。
 
 ## ✨ 主要功能
@@ -17,7 +19,6 @@
 - Cookie 数据
 - 本地存储
 - Service Worker
-- 清除单个网站域名的历史记录功能
 
 ## 📊 性能检测指标
 
@@ -31,7 +32,7 @@
 ## 📦 安装方法
 
 1. 克隆项目
-   git clone [项目地址]
+   git clone
    cd ClearPage
 
 2. 安装依赖
@@ -39,9 +40,9 @@
 3. 构建项目
    npm run build
 
-4. 在 Chrome 中安装
+4. 在浏览器中安装
 
-- 打开 Chrome 扩展管理页面 (`chrome://extensions/`)
+- 打开浏览器扩展管理页面
 - 开启"开发者模式"
 - 点击"加载已解压的扩展程序"
 - 选择项目的 `dist` 目录
@@ -60,7 +61,7 @@
 
 - TypeScript + React
 - Tailwind CSS
-- Chrome Extension API
+- 浏览器扩展 API
 
 ### 开发命令
 
