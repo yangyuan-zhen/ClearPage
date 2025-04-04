@@ -14,6 +14,7 @@ const CacheClearButton: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
+  const [clearTime, setClearTime] = useState<number | null>(null);
 
   const dataTypeOptions: { value: DataType; label: string }[] = [
     { value: "cache", label: getMessage("cache") },
@@ -72,30 +73,38 @@ const CacheClearButton: React.FC = () => {
 
     setIsLoading(true);
     setMessage("");
+    setClearTime(null);
 
     try {
+      const startTime = performance.now();
+
       const result = await clearDomainCache({
         domain: currentDomain,
         dataTypes: selectedTypes,
       });
 
+      const endTime = performance.now();
+      const timeUsed = Math.round(endTime - startTime);
+      setClearTime(timeUsed);
+
       if (result.success) {
         setMessage(getMessage("clearSuccess"));
-        if (
-          selectedTypes.some((type) =>
-            ["cache", "cookies", "localStorage", "serviceWorkers"].includes(
-              type
-            )
-          )
-        ) {
-          chrome.tabs.reload();
+
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+
+        if (tab?.id) {
+          await chrome.tabs.reload(tab.id);
         }
       } else {
-        setMessage(getMessage("clearFailed", result.error || ""));
+        setMessage(getMessage("clearFailed", [result.error || "未知错误"]));
       }
     } catch (error) {
+      console.error("清除失败:", error);
       setMessage(
-        getMessage("clearFailed", error instanceof Error ? error.message : "")
+        `清除失败: ${error instanceof Error ? error.message : String(error)}`
       );
     } finally {
       setIsLoading(false);
@@ -148,16 +157,21 @@ const CacheClearButton: React.FC = () => {
       </button>
 
       {message && (
-        <p
-          data-testid="status-message"
-          className={`text-sm ${
-            message.includes(getMessage("clearFailed"))
-              ? "text-red-500"
-              : "text-green-500"
+        <div
+          className={`mt-2 text-sm p-2 rounded ${
+            message.includes("成功")
+              ? "bg-green-50 text-green-700"
+              : "bg-red-50 text-red-600"
           }`}
+          data-testid="status-message"
         >
           {message}
-        </p>
+          {clearTime && message.includes("成功") && (
+            <span className="ml-1 text-xs text-gray-500">
+              (用时 {clearTime} ms)
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

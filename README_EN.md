@@ -85,6 +85,15 @@ MIT License
 
 ## 📅 Change Log
 
+### 2025-02-05
+
+- ✨ Added display of data clearing time
+- 🚀 Optimized cache clearing performance for faster operation
+
+### 2025-02-03
+
+- ✨ Added feature to clear browsing history for specific domains
+
 ### 2025-01-13
 
 - ✨ Added browser i18n internationalization support

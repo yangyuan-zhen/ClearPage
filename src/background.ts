@@ -53,10 +53,13 @@ chrome.runtime.onMessage.addListener((
             );
         }
 
-        // 等待所有任务完成
+        // 记录开始时间
+        const startTime = Date.now();
+
+        // 使用 Promise.all 并行处理不同类型的清除任务
         Promise.all(clearTasks)
             .then(() => {
-                sendResponse({ success: true });
+                sendResponse({ success: true, timeUsed: Date.now() - startTime });
             })
             .catch((error) => {
                 sendResponse({ success: false, error: error.message });

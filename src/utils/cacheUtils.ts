@@ -12,7 +12,10 @@ export const clearDomainCache = async (
     options: CacheOptions = {}
 ): Promise<ClearCacheResult> => {
     try {
-        const { domain, since = 0, dataTypes = ['cache'] } = options;
+        const { domain, since = Date.now() - 3600000, dataTypes = ['cache'] } = options;
+
+        // 默认只清理最近一小时的数据，而不是全部历史
+        // 这样可以显著提高大型网站的清理速度
 
         // 发送消息给 background script
         const response = await chrome.runtime.sendMessage({
