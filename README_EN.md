@@ -9,6 +9,7 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 - 🎯 Precisely clean cache data for current website
 - 🔄 Automatically refresh page after cleaning
 - ⚠️ Security prompts before clearing sensitive data
+- 💡 Cleaning recommendations and one-click apply
 - 📊 Website performance detection
 - 🌐 Multilingual support (English/Chinese)
 - 🎨 Clean and intuitive user interface
@@ -51,10 +52,11 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 ## 💡 How to Use
 
 1. Click the extension icon to open the panel
-2. Select the data types you want to clear
-3. Click the "Clear Data" button
-4. Confirm the warning prompt for sensitive data (like cookies)
-5. The page will automatically refresh after cleaning
+2. View cleaning recommendations and apply with one click
+3. Select the data types you want to clear
+4. Click the "Clear Data" button
+5. Confirm the warning prompt for sensitive data (like cookies)
+6. The page will automatically refresh after cleaning
 
 ## 🔨 Development
 
@@ -84,6 +86,10 @@ npm test
 MIT License
 
 ## 📅 Change Log
+
+### 2025-04-17
+
+- 💡 Added cleaning recommendations and one-click apply feature
 
 ### 2025-02-05
 

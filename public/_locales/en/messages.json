@@ -1,39 +1,39 @@
 {
   "appName": {
-    "message": "Web Data Cleaner"
+    "message": "网页数据清理工具"
   },
   "appDescription": {
-    "message": "Clean website cache, cookies and browsing data with one click"
+    "message": "一键清理特定网站的缓存、Cookie等浏览数据，提升浏览体验"
   },
   "currentDomain": {
-    "message": "Current Domain"
+    "message": "当前域名"
   },
   "selectDataTypes": {
-    "message": "Select data types to clear"
+    "message": "选择要清除的数据"
   },
   "cache": {
-    "message": "Cache"
+    "message": "缓存"
   },
   "cookies": {
-    "message": "Cookies"
+    "message": "Cookie"
   },
   "localStorage": {
-    "message": "Local Storage"
+    "message": "本地存储"
   },
   "serviceWorker": {
     "message": "Service Worker"
   },
   "clearData": {
-    "message": "Clear Data"
+    "message": "清除数据"
   },
   "clearing": {
-    "message": "Clearing..."
+    "message": "清除中..."
   },
   "clearSuccess": {
-    "message": "Cleared successfully!"
+    "message": "清除成功！"
   },
   "clearFailed": {
-    "message": "Clear failed: $ERROR$",
+    "message": "清除失败: $ERROR$",
     "placeholders": {
       "error": {
         "content": "$1"
@@ -41,66 +41,69 @@
     }
   },
   "sensitiveWarning": {
-    "message": "⚠️ Warning: Clearing selected data may cause you to be logged out and need to log in again"
+    "message": "⚠️ 注意：清除选中的数据可能会导致登录状态丢失，需要重新登录网站"
   },
   "performanceCheck": {
-    "message": "Performance Check"
+    "message": "页面性能检测"
   },
   "checking": {
-    "message": "Checking..."
+    "message": "检测中..."
   },
   "checkPerformance": {
-    "message": "Check Performance"
+    "message": "检测性能"
   },
   "dnsTime": {
-    "message": "DNS Lookup"
+    "message": "DNS 解析"
   },
   "tcpTime": {
-    "message": "TCP Connection"
+    "message": "TCP 连接"
   },
   "requestTime": {
-    "message": "Request Time"
+    "message": "请求响应"
   },
   "domTime": {
-    "message": "DOM Parse"
+    "message": "DOM 解析"
   },
   "loadTime": {
-    "message": "Total Load Time"
+    "message": "总加载时间"
   },
   "resourceInfo": {
-    "message": "Resources Count/Size"
+    "message": "资源数量/大小"
   },
   "sensitiveDataWarningTitle": {
-    "message": "Warning: You have selected the following sensitive data:"
+    "message": "警告：您选择了以下敏感数据："
   },
   "sensitiveDataWarningConsequences": {
-    "message": "\nClearing these data may result in:"
+    "message": "\n清除这些数据可能会导致："
   },
   "loginLoss": {
-    "message": "- Loss of website login status"
+    "message": "- 网站登录状态丢失"
   },
   "formDataLoss": {
-    "message": "- Loss of saved form data"
+    "message": "- 保存的表单数据消失"
   },
   "reloginRequired": {
-    "message": "- Need to log in again"
+    "message": "- 需要重新登录网站"
   },
   "pageWillRefresh": {
-    "message": "\nThe page will refresh automatically, do you want to continue?"
+    "message": "\n页面将会自动刷新，确定要继续吗？"
   },
   "clearError": {
-    "message": "Error occurred while clearing"
+    "message": "清除时发生错误"
   },
   "performanceError": {
-    "message": "Failed to get performance data"
+    "message": "获取性能数据失败"
   },
-  "appTitle": {
-    "message": "Cache Cleaner"
+  "cleaningRecommendation": {
+    "message": "Cleaning Recommendation"
   },
-  "history": {
-    "message": "History"
+  "showRecommendation": {
+    "message": "Show Recommendation"
   },
-  "historyWarning": {
-    "message": "Clearing history cannot be undone"
+  "applyRecommendation": {
+    "message": "Apply Recommendation"
+  },
+  "closeRecommendation": {
+    "message": "Close Recommendation"
   }
 }
