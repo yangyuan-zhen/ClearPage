@@ -91,7 +91,7 @@ MIT License
 
 - 💡 Added cleaning recommendations and one-click apply feature
 
-### 2025-02-05
+### 2025-04-04
 
 - ✨ Added display of data clearing time
 - 🚀 Optimized cache clearing performance for faster operation
