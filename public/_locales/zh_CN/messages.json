@@ -95,7 +95,7 @@
     "message": "获取性能数据失败"
   },
   "appTitle": {
-    "message": "网页缓存清理"
+    "message": "网页数据清理"
   },
   "cleaningRecommendation": {
     "message": "清理建议"
