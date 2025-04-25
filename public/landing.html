@@ -164,27 +164,177 @@
             max-width: 280px;
             display: flex;
             flex-direction: column;
-            height: 300px;
+            align-items: center;
+            height: 350px;
         }
 
         .donate-title {
             font-size: 1.2rem;
-            margin: 15px 0;
+            margin-top: 20px;
             color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .donate-img-container {
+            width: 220px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 10px;
         }
 
         .donate-img {
-            width: 220px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
             transition: transform 0.3s;
-            flex-grow: 1;
-            object-fit: contain;
-            margin-bottom: auto;
         }
 
         .donate-img:hover {
             transform: scale(1.05);
+        }
+
+        /* 赞赏墙样式 */
+        .supporter-wall {
+            padding: 80px 0;
+            background-color: #f8f9fa;
+            text-align: center;
+        }
+
+        .supporter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 40px auto 0;
+        }
+
+        .supporter-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+
+        .supporter-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .supporter-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            border: 3px solid #fff;
+        }
+
+        .supporter-name {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .supporter-date {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .supporter-message {
+            font-size: 0.85rem;
+            color: #34495e;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* 评价墙样式 */
+        .review-wall {
+            padding: 80px 0;
+            background-color: #ffffff;
+            text-align: center;
+        }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 40px auto 0;
+        }
+
+        .review-card {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            text-align: left;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .review-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 3px solid #fff;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-user-info {
+            flex-grow: 1;
+        }
+
+        .review-username {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .review-stars {
+            color: #f1c40f;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .review-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #34495e;
+            flex-grow: 1;
+        }
+
+        .review-source {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-align: right;
+            font-style: italic;
         }
 
         footer {
@@ -230,6 +380,30 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 30px;
+            }
+
+            .donate-item {
+                height: auto;
+                margin-bottom: 20px;
+            }
+
+            .donate-img-container {
+                width: 200px;
+                height: 280px;
+            }
+
+            .supporter-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 15px;
+            }
+
+            .review-grid {
+                grid-template-columns: 1fr;
+                padding: 0 15px;
+            }
+
+            .review-card {
+                padding: 20px;
             }
         }
     </style>
@@ -327,12 +501,64 @@
             <p style="text-align: center; margin-bottom: 30px;">如果您觉得这个扩展对您有帮助，欢迎赞赏支持我继续开发更多实用功能！</p>
             <div class="donate-container">
                 <div class="donate-item">
-                    <img src="wx.png" alt="微信支付" class="donate-img">
+                    <div class="donate-img-container">
+                        <img src="wx.png" alt="微信支付" class="donate-img">
+                    </div>
                     <h3 class="donate-title">微信赞赏</h3>
                 </div>
                 <div class="donate-item">
-                    <img src="zfb.jpg" alt="支付宝" class="donate-img">
+                    <div class="donate-img-container">
+                        <img src="zfb.jpg" alt="支付宝" class="donate-img">
+                    </div>
                     <h3 class="donate-title">支付宝赞赏</h3>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 30px; font-style: italic; color: #7f8c8d;">
+                您的支持将帮助我们提供更好的工具和服务
+            </p>
+        </div>
+    </section>
+
+    <!-- 赞赏墙 -->
+    <section class="supporter-wall">
+        <div class="container">
+            <h2 class="section-title">赞赏墙</h2>
+            <p style="text-align: center; margin-bottom: 30px;">感谢每一位支持者的慷慨赞赏，您的支持是我继续改进产品的动力！</p>
+            <div class="supporter-grid">
+                <div class="supporter-item">
+                    <img src="/public/ava/liergou.jpg" alt="用户头像" class="supporter-avatar">
+                    <div class="supporter-name">李二狗</div>
+                    <div class="supporter-date">2025-04-24</div>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 30px; font-style: italic; color: #7f8c8d;">
+                您的名字也可以出现在这里 ↑
+            </p>
+        </div>
+    </section>
+
+    <!-- 评价墙 -->
+    <section class="review-wall">
+        <div class="container">
+            <h2 class="section-title">用户评价</h2>
+            <p style="text-align: center; margin-bottom: 30px;">来自真实用户的使用体验和评价</p>
+            <div class="review-grid">
+                <!-- 用户提供的真实评价 -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <img src="https://lh3.googleusercontent.com/a-/ALV-UjUoJy8-3XRQT6dzJmVOAdH-OwSQ6CevzAU2Wk8H4VJ51gxbpc4=s48-w48-h48"
+                            alt="用户头像" class="review-avatar">
+                        <div class="review-user-info">
+                            <div class="review-username">BZ Z
+                            </div>
+                            <div class="review-date">2025-04-20</div>
+                        </div>
+                    </div>
+                    <div class="review-stars">★★★★★</div>
+                    <div class="review-content">
+                        很好用，解决了两天的困扰，很适合开发，还有喜欢干净的人。
+                    </div>
+                    <div class="review-source">Chrome Web Store</div>
                 </div>
             </div>
         </div>
