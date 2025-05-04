@@ -130,10 +130,18 @@ const CacheClearButton: React.FC = () => {
           history.map((h) => ({ domain: h.domain, dataTypes: h.dataTypes }))
         );
 
+        // 确保至少包含基本缓存
+        if (!smartRecommendations.includes("cache")) {
+          smartRecommendations.push("cache");
+        }
+
         setRecommendations(smartRecommendations);
         setCleaningAdvice(
           getCleaningAdvice(currentDomain, smartRecommendations)
         );
+
+        // 自动应用智能建议到复选框选择中
+        setSelectedTypes([...smartRecommendations]);
       } catch (error) {
         console.error("获取智能推荐失败:", error);
       }
@@ -191,7 +199,21 @@ const CacheClearButton: React.FC = () => {
 
   const applyRecommendations = () => {
     if (recommendations.length > 0) {
-      setSelectedTypes(recommendations);
+      // 重置所有选择，然后应用建议
+      setSelectedTypes([...recommendations]);
+
+      // 显示应用成功的反馈
+      const successMessage = "已应用建议的数据类型";
+
+      // 创建临时消息提示
+      const oldMessage = message;
+      setMessage(successMessage);
+      setTimeout(() => {
+        // 如果消息未被其他操作更改，则清空它
+        setMessage((currentMsg) =>
+          currentMsg === successMessage ? "" : currentMsg
+        );
+      }, 2000);
     }
   };
 
@@ -286,6 +308,67 @@ const CacheClearButton: React.FC = () => {
 
   const toggleRecommendations = () => {
     setShowRecommendations(!showRecommendations);
+  };
+
+  // 添加全选/取消全选功能
+  const handleSelectAll = (isBasic = false) => {
+    if (isBasic) {
+      // 选择基本数据类型
+      const basicTypes: DataType[] = [
+        "cache",
+        "cookies",
+        "localStorage",
+        "serviceWorkers",
+      ];
+      setSelectedTypes((prev) => {
+        const currentBasicSelected = basicTypes.every((type) =>
+          prev.includes(type)
+        );
+
+        if (currentBasicSelected) {
+          // 当前全部已选中，则取消全部选择
+          return prev.filter((type) => !basicTypes.includes(type));
+        } else {
+          // 当前未全部选中，则全部选中
+          const newSelected = [...prev];
+          basicTypes.forEach((type) => {
+            if (!newSelected.includes(type)) {
+              newSelected.push(type);
+            }
+          });
+          return newSelected;
+        }
+      });
+    } else {
+      // 选择高级数据类型
+      const advancedTypes: DataType[] = [
+        "indexedDB" as DataType,
+        "sessionStorage" as DataType,
+        "webSQL" as DataType,
+        "formData" as DataType,
+        "fileSystem" as DataType,
+      ];
+
+      setSelectedTypes((prev) => {
+        const currentAdvancedSelected = advancedTypes.every((type) =>
+          prev.includes(type)
+        );
+
+        if (currentAdvancedSelected) {
+          // 当前全部已选中，则取消全部选择
+          return prev.filter((type) => !advancedTypes.includes(type));
+        } else {
+          // 当前未全部选中，则全部选中
+          const newSelected = [...prev];
+          advancedTypes.forEach((type) => {
+            if (!newSelected.includes(type)) {
+              newSelected.push(type);
+            }
+          });
+          return newSelected;
+        }
+      });
+    }
   };
 
   return (
@@ -390,6 +473,9 @@ const CacheClearButton: React.FC = () => {
                     className="px-3 py-1.5 mr-3 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
                   >
                     {getMessage("applyRecommendation")}
+                    <span className="ml-1 text-xs bg-blue-500 px-1.5 py-0.5 rounded-full text-white font-normal">
+                      已应用
+                    </span>
                   </button>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     {recommendations.map((type) => (
@@ -432,9 +518,22 @@ const CacheClearButton: React.FC = () => {
 
         <div className="p-3">
           <div className="mb-4">
-            <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-              {getMessage("selectDataTypes")}
-            </p>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {getMessage("selectDataTypes")}
+              </p>
+              <button
+                onClick={() => handleSelectAll(true)}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                {dataTypeOptions
+                  .slice(0, 4)
+                  .every(({ value }) => selectedTypes.includes(value))
+                  ? "取消全选"
+                  : "全选基本类型"}
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 mb-2">
               {dataTypeOptions.slice(0, 4).map(({ value, label }) => (
                 <label
@@ -460,9 +559,22 @@ const CacheClearButton: React.FC = () => {
             </div>
 
             {/* 高级数据类型 */}
-            <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-              高级数据类型:
-            </p>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                高级数据类型:
+              </p>
+              <button
+                onClick={() => handleSelectAll(false)}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                {dataTypeOptions
+                  .slice(4)
+                  .every(({ value }) => selectedTypes.includes(value))
+                  ? "取消全选"
+                  : "全选高级类型"}
+              </button>
+            </div>
+
             <div className="grid grid-cols-3 gap-2">
               {dataTypeOptions.slice(4).map(({ value, label }) => (
                 <label

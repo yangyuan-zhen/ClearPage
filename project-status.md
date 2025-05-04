@@ -3,7 +3,7 @@
 ## 项目概览
 
 **项目名称**: 网页数据清理插件  
-**版本**: 1.0.5
+**版本**: 1.0.7
 **类型**: 浏览器扩展  
 **开发状态**: 开发中
 
@@ -30,13 +30,15 @@
 - ✅ 国际化支持
 - ✅ 性能数据可视化
 - ✅ 完善数据类型支持
+- ✅ 界面布局优化
+- ✅ 自定义清理规则与定时清理
+- ✅ 自动性能检测与智能建议
 
 ### 待开发功能
 
 - ⏳ 清理历史记录功能优化
 - ⏳ 批量清理功能
-- ⏳ 定时清理功能
-- ⏳ 清理规则配置
+- ⏳ 高级清理统计
 
 ## 测试覆盖率
 
@@ -327,6 +329,258 @@
   3. 提供了更精细的清理控制
   4. 改善了用户体验和清理效果
 
+#### 6. 插件界面过窄导致内容过长
+
+- **问题描述**: 原有插件宽度不足，导致内容显示过长，用户需要滚动查看
+- **解决时间**: 2025-04-25
+- **解决方案**:
+
+  1. 增加插件宽度:
+
+     ```tsx
+     // 从原来的350px扩展到450-500px
+     <div className="min-w-[450px] max-w-[500px] min-h-[200px] bg-white">
+       {/* 插件内容 */}
+     </div>
+     ```
+
+  2. 优化数据类型布局:
+
+     ```tsx
+     // 基础数据类型保持双列
+     <div className="grid grid-cols-2 gap-2 mb-2">
+       {dataTypeOptions.slice(0, 4).map(({ value, label }) => (
+         // 数据类型选择框
+       ))}
+     </div>
+
+     // 高级数据类型采用三列布局
+     <div className="grid grid-cols-3 gap-2">
+       {dataTypeOptions.slice(4).map(({ value, label }) => (
+         // 高级数据类型选择框
+       ))}
+     </div>
+     ```
+
+  3. 改进视觉层次:
+     - 增加了标题分隔，清晰区分基础和高级数据类型
+     - 优化了数据类型标签的大小和边距
+     - 改进了按钮样式，增加了视觉反馈效果
+     - 添加了加载状态动画
+
+- **技术要点**:
+
+  - 使用 Tailwind CSS 的响应式布局
+  - CSS Grid 实现更灵活的列布局
+  - 使用 SVG 动画增强交互体验
+  - 优化文本大小实现信息层次化
+
+- **改进效果**:
+  1. 插件界面更加紧凑，减少了滚动需求
+  2. 数据类型选择区域布局更合理，适应了不同长度的标签文本
+  3. 提升了视觉层次感，增强了用户体验
+  4. 保持了移动设备上的良好兼容性
+
+#### 7. 自定义清理规则实现
+
+- **问题描述**: 用户需要根据自己的习惯和需求自定义清理规则，并支持自动定时清理
+- **解决时间**: 2025-05-03
+- **解决方案**:
+
+  1. 设计清理规则数据结构：
+
+     ```typescript
+     interface CleaningRule {
+       id: string;
+       name: string;
+       domain: string;
+       dataTypes: DataType[];
+       isEnabled: boolean;
+       isAutomatic: boolean;
+       frequency?: "daily" | "weekly" | "monthly";
+       lastCleanTime?: number;
+     }
+     ```
+
+  2. 实现规则管理界面：
+
+     ```tsx
+     const SettingsPanel: React.FC = () => {
+       const [rules, setRules] = useState<CleaningRule[]>([]);
+       const [editingRule, setEditingRule] = useState<CleaningRule | null>(
+         null
+       );
+
+       // 加载已保存的规则
+       useEffect(() => {
+         const fetchRules = async () => {
+           const savedRules = await loadRules();
+           setRules(savedRules);
+         };
+         fetchRules();
+       }, []);
+
+       // ... 规则编辑、保存、删除等功能
+     };
+     ```
+
+  3. 实现后台自动清理功能：
+
+     ```typescript
+     // 设置定时检查自动清理规则
+     const scheduleAutomaticCleaning = () => {
+       // 每小时检查一次是否有需要执行的自动清理规则
+       chrome.alarms.create("autoCleanCheck", {
+         periodInMinutes: 60,
+       });
+
+       // 监听定时器事件
+       chrome.alarms.onAlarm.addListener((alarm) => {
+         if (alarm.name === "autoCleanCheck") {
+           runAutomaticCleaning();
+         }
+       });
+     };
+
+     // 执行自动清理
+     const runAutomaticCleaning = async (): Promise<void> => {
+       const rules = await loadRules();
+       const now = Date.now();
+
+       // 根据频率筛选需要执行的规则
+       const rulesToExecute = rules.filter((rule) => {
+         if (!rule.isEnabled || !rule.isAutomatic) return false;
+
+         const lastClean = rule.lastCleanTime || 0;
+         const hoursSinceLastClean = (now - lastClean) / (1000 * 60 * 60);
+
+         if (rule.frequency === "daily" && hoursSinceLastClean >= 24) {
+           return true;
+         } else if (rule.frequency === "weekly" && hoursSinceLastClean >= 168) {
+           return true;
+         } else if (
+           rule.frequency === "monthly" &&
+           hoursSinceLastClean >= 720
+         ) {
+           return true;
+         }
+
+         return false;
+       });
+
+       // 执行清理并更新规则
+       // ...
+     };
+     ```
+
+  4. 导航优化：
+     - 添加了标签式导航，区分"清理数据"、"性能检测"和"设置"
+     - 实现了无缝切换，保持每个标签页的状态
+     - 优化了移动设备上的导航体验
+
+- **技术要点**:
+
+  - 使用 React Hooks 管理规则状态和 UI 交互
+  - 使用 Chrome Storage API 实现规则持久化
+  - 使用 Chrome Alarms API 实现定时任务
+  - 精确计算时间间隔确保按频率执行清理
+
+- **改进效果**:
+  1. 用户可以创建、编辑和管理自定义清理规则
+  2. 支持按域名模式（支持通配符）和数据类型定制规则
+  3. 实现了自动定时清理功能，支持每日、每周、每月频率
+  4. 改善了用户体验，减少了手动清理的操作需求
+
+#### 8. 自动性能检测与智能建议应用
+
+- **问题描述**: 用户需要手动点击按钮才能执行性能检测或应用智能清理建议，操作流程不够便捷
+- **解决时间**: 2025-05-10
+- **解决方案**:
+
+  1. 实现自动性能检测：
+
+     ```tsx
+     // 组件挂载时自动执行性能检测
+     useEffect(() => {
+       runPerformanceCheck();
+     }, []);
+     ```
+
+  2. 使用 key 值控制性能面板重新渲染：
+
+     ```tsx
+     // 切换到性能检测标签时触发重新渲染
+     const handleTabChange = (tab: "clean" | "performance" | "settings") => {
+       setActiveTab(tab);
+       if (tab === "performance") {
+         // 更新key以强制PerformancePanel重新渲染
+         setPerformancePanelKey((prevKey) => prevKey + 1);
+       }
+     };
+
+     // 在渲染性能面板组件时使用key属性
+     {
+       activeTab === "performance" && (
+         <div className="pt-0">
+           <PerformancePanel key={performancePanelKey} />
+         </div>
+       );
+     }
+     ```
+
+  3. 智能建议自动应用：
+
+     ```tsx
+     useEffect(() => {
+       if (!currentDomain) return;
+
+       const getRecommendations = async () => {
+         try {
+           const history = await cleanHistoryService.getCleanHistory();
+           const smartRecommendations = getSmartCleaningRecommendations(
+             currentDomain,
+             history.map((h) => ({ domain: h.domain, dataTypes: h.dataTypes }))
+           );
+
+           // 确保至少包含基本缓存
+           if (!smartRecommendations.includes("cache")) {
+             smartRecommendations.push("cache");
+           }
+
+           setRecommendations(smartRecommendations);
+           setCleaningAdvice(
+             getCleaningAdvice(currentDomain, smartRecommendations)
+           );
+
+           // 自动应用智能建议到复选框选择中
+           setSelectedTypes([...smartRecommendations]);
+         } catch (error) {
+           console.error("获取智能推荐失败:", error);
+         }
+       };
+
+       getRecommendations();
+     }, [currentDomain]);
+     ```
+
+  4. 全选/取消全选功能：
+     - 为基础数据类型添加了全选/取消全选按钮
+     - 为高级数据类型添加了全选/取消全选按钮
+     - 智能识别当前选择状态，动态显示按钮文本
+
+- **技术要点**:
+
+  - 使用 React useEffect 钩子实现自动执行
+  - 使用组件 key 属性控制组件重新渲染
+  - 优化用户界面，提供即时反馈
+  - 添加状态指示，清晰显示已应用的智能建议
+
+- **改进效果**:
+  1. 切换到性能检测标签页后自动执行检测，不需要用户再点击"检测"按钮
+  2. 插件打开时自动应用智能建议，复选框自动选中推荐的数据类型
+  3. 添加了全选/取消全选功能，方便用户快速选择数据类型
+  4. 大幅优化了用户体验，减少了重复点击操作
+
 ### 待解决问题
 
 #### 1. 批量清理性能优化
@@ -418,7 +672,25 @@
 - **事务处理**: 对于数据库类型，使用事务确保完整性
 - **清理验证**: 清理后进行校验，确保数据已被完全清除
 
-## 📅 更新日志
+## �� 更新日志
+
+### 2025-05-10
+
+- ✨ 实现性能检测自动执行，用户切换到检测标签页后自动显示结果
+- 🚀 优化智能建议，开启插件时自动应用推荐的数据类型
+- 📋 新增数据类型全选/取消全选功能，提升操作便捷性
+
+### 2025-05-03
+
+- ✨ 新增自定义清理规则功能，支持用户创建、编辑和管理规则
+- 🚀 实现自动定时清理功能，支持每日、每周和每月频率
+- 🔄 优化界面导航，添加标签式切换
+
+### 2025-04-25
+
+- 🎨 优化插件界面布局，增加宽度，提高可用性
+- ✨ 改进数据类型显示方式，采用分组和多列布局
+- 🚀 增强按钮和交互元素的视觉效果和反馈
 
 ### 2025-04-22
 

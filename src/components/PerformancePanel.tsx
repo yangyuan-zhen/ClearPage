@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getPagePerformance } from "../utils/performanceUtils";
 import type { PagePerformance } from "../utils/performanceUtils";
 import { getMessage } from "../utils/i18n";
@@ -37,7 +37,8 @@ const PerformancePanel: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const handleCheck = async () => {
+  // 执行性能检测函数
+  const runPerformanceCheck = async () => {
     setIsLoading(true);
     setError("");
     try {
@@ -52,6 +53,11 @@ const PerformancePanel: React.FC = () => {
     }
   };
 
+  // 组件挂载时自动执行性能检测
+  useEffect(() => {
+    runPerformanceCheck();
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -59,19 +65,30 @@ const PerformancePanel: React.FC = () => {
           {getMessage("performanceCheck")}
         </h2>
         <button
-          onClick={handleCheck}
+          onClick={runPerformanceCheck}
           disabled={isLoading}
           className={`px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700 text-xs font-medium transition-colors ${
             isLoading ? "opacity-70 cursor-wait" : ""
           }`}
         >
-          {isLoading ? getMessage("checking") : getMessage("checkPerformance")}
+          {isLoading
+            ? getMessage("checking")
+            : getMessage("refreshPerformance")}
         </button>
       </div>
 
       {error && (
         <div className="p-3 text-xs text-red-600 bg-red-50 rounded-md border border-red-200">
           {error}
+        </div>
+      )}
+
+      {isLoading && !performance && (
+        <div className="flex justify-center items-center py-6">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-2 text-sm text-gray-600">
+            {getMessage("loading")}
+          </span>
         </div>
       )}
 

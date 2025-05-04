@@ -9,10 +9,12 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 - 🎯 Precisely clean cache data for current website
 - 🔄 Automatically refresh page after cleaning
 - ⚠️ Security prompts before clearing sensitive data
-- 💡 Cleaning recommendations and one-click apply
-- 📊 Website performance detection
+- 💡 Smart cleaning recommendations with auto-apply
+- 📊 Automatic website performance detection
 - 🌐 Multilingual support (English/Chinese)
 - 🎨 Clean and intuitive user interface
+- 📱 Optimized layout design for better visual experience
+- ⏱️ Custom cleaning rules and scheduled cleaning
 
 ## 🔧 Data Types Supported
 
@@ -20,6 +22,11 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 - Cookies
 - Local storage
 - Service workers
+- IndexedDB databases
+- SessionStorage
+- WebSQL databases
+- Form data
+- File system storage
 
 ## 📊 Performance Metrics
 
@@ -52,11 +59,13 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 ## 💡 How to Use
 
 1. Click the extension icon to open the panel
-2. View cleaning recommendations and apply with one click
-3. Select the data types you want to clear
+2. Smart cleaning recommendations are automatically applied
+3. Use the select/deselect all buttons to quickly manage data types
 4. Click the "Clear Data" button
 5. Confirm the warning prompt for sensitive data (like cookies)
 6. The page will automatically refresh after cleaning
+7. Switch to "Performance" tab to view automatically executed performance analysis
+8. Create and manage custom cleaning rules in the "Settings" tab
 
 ## 🔨 Development
 
@@ -86,6 +95,29 @@ npm test
 MIT License
 
 ## 📅 Change Log
+
+### 2025-05-10
+
+- ✨ Implemented automatic performance detection when switching to performance tab
+- 🚀 Optimized smart recommendations to auto-apply when opening the extension
+- 📋 Added select/deselect all functionality for data types
+
+### 2025-05-03
+
+- ✨ Added custom cleaning rules feature for creating and managing rules
+- 🚀 Implemented scheduled automatic cleaning with daily, weekly, monthly options
+- 🔄 Optimized interface navigation with tab-based switching
+
+### 2025-04-25
+
+- 🎨 Optimized interface layout, increased width, and improved usability
+- ✨ Improved data type display with grouping and multi-column layout
+- 🚀 Enhanced buttons and interactive elements with better visual feedback
+
+### 2025-04-22
+
+- ✨ Added support for more data types: IndexedDB, SessionStorage, WebSQL, etc.
+- 🚀 Implemented deep cleaning mode for more thorough website data removal
 
 ### 2025-04-17
 

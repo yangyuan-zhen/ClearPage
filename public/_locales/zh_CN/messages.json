@@ -52,6 +52,12 @@
   "checkPerformance": {
     "message": "检测性能"
   },
+  "refreshPerformance": {
+    "message": "刷新数据"
+  },
+  "loading": {
+    "message": "加载中..."
+  },
   "dnsTime": {
     "message": "DNS 解析"
   },

@@ -93,31 +93,44 @@ const websiteCategories: Record<string, WebsiteCategory> = {
     "dingtalk.com": "webapp",
 };
 
-// 根据网站类型推荐清理选项 - 包含新的数据类型
+// 根据网站类型推荐清理选项 - 包含新的数据类型，调整差异化推荐
 const categoryRecommendations: Record<WebsiteCategory, DataType[]> = {
-    social: ["cache", "localStorage", "indexedDB" as DataType],
-    video: ["cache", "serviceWorkers", "indexedDB" as DataType],
-    shopping: ["cache", "sessionStorage" as DataType],
+    social: ["cache", "localStorage"], // 社交网站主要清理基础缓存和本地存储
+    video: ["cache", "serviceWorkers"], // 视频网站主要清理缓存和Service Worker
+    shopping: ["cache"], // 购物网站仅建议清理缓存
     banking: [], // 金融网站通常不建议清理
-    news: ["cache", "localStorage"],
-    mail: ["cache", "serviceWorkers"],
-    forum: ["cache", "localStorage", "indexedDB" as DataType],
-    search: ["cache", "serviceWorkers"],
-    education: ["cache", "localStorage"],
-    streaming: ["cache", "serviceWorkers", "indexedDB" as DataType],
-    webapp: ["cache", "localStorage", "indexedDB" as DataType, "sessionStorage" as DataType],
-    other: ["cache"]
+    news: ["cache"], // 新闻网站只需清理缓存
+    mail: ["cache"], // 邮件服务主要清理缓存
+    forum: ["cache", "localStorage"], // 论坛清理缓存和本地存储
+    search: ["cache"], // 搜索引擎只需清理缓存
+    education: ["cache"], // 教育网站只需清理缓存
+    streaming: ["cache", "serviceWorkers"], // 流媒体清理缓存和Service Worker
+    webapp: ["cache", "localStorage", "indexedDB" as DataType], // 仅Web应用需要更全面的清理
+    other: ["cache"] // 其他网站默认只清理缓存
 };
 
-// 特定网站的自定义推荐 - 扩展并明确标记新数据类型
+// 特定网站的自定义推荐 - 明确需要高级清理的网站
 const domainSpecificRecommendations: Record<string, DataType[]> = {
+    // 高级多媒体网站需要更全面的清理
     "bilibili.com": ["cache", "localStorage", "serviceWorkers", "indexedDB" as DataType],
-    "youtube.com": ["cache", "serviceWorkers", "indexedDB" as DataType, "webSQL" as DataType],
-    "taobao.com": ["cache", "serviceWorkers", "localStorage", "sessionStorage" as DataType],
-    "gmail.com": ["cache", "localStorage", "serviceWorkers"],
+    "youtube.com": ["cache", "serviceWorkers", "indexedDB" as DataType],
+
+    // 大型电商平台
+    "taobao.com": ["cache", "serviceWorkers", "localStorage"],
+    "jd.com": ["cache", "localStorage"],
+
+    // 生产力工具
+    "gmail.com": ["cache", "localStorage"],
     "docs.google.com": ["cache", "localStorage", "indexedDB" as DataType],
-    "github.com": ["cache", "localStorage", "sessionStorage" as DataType],
-    "zhihu.com": ["cache", "serviceWorkers", "indexedDB" as DataType],
+    "github.com": ["cache", "localStorage"],
+
+    // 内容平台
+    "zhihu.com": ["cache", "serviceWorkers", "localStorage"],
+
+    // SPA应用
+    "notion.so": ["cache", "localStorage", "indexedDB" as DataType],
+    "figma.com": ["cache", "localStorage", "indexedDB" as DataType],
+    "trello.com": ["cache", "localStorage", "indexedDB" as DataType],
 };
 
 /**
@@ -204,10 +217,16 @@ export function getSmartCleaningRecommendations(
     // 获取基于类别的推荐
     let baseRecommendations = categoryRecommendations[category] || ["cache"];
 
+    // 检查域名是否包含可能表示为复杂应用的关键词
+    const isComplexApp = /app|portal|dashboard|admin|account|system|platform/.test(domain.toLowerCase());
+
     // 网页存储使用情况分析 (模拟实现，实际应该检测真实存储使用量)
-    const storage: DataType[] = analyzeStorageUsage(domain);
-    if (storage.length > 0) {
-        baseRecommendations = [...new Set([...baseRecommendations, ...storage])];
+    // 只有当网站是复杂应用时才考虑额外的存储分析
+    if (isComplexApp) {
+        const storage: DataType[] = analyzeStorageUsage(domain);
+        if (storage.length > 0) {
+            baseRecommendations = [...new Set([...baseRecommendations, ...storage])];
+        }
     }
 
     // 如果有用户历史，结合历史进行个性化推荐
@@ -270,18 +289,22 @@ function analyzeStorageUsage(domain: string): DataType[] {
     // 这里仅作示例，实际应该检测真实存储
     const category = getWebsiteCategory(domain);
 
-    if (category === "social" || category === "video") {
-        return ["indexedDB" as DataType, "localStorage"];
-    }
-
+    // 只针对特定的Web应用推荐高级数据类型
     if (category === "webapp") {
-        return ["localStorage", "indexedDB" as DataType, "sessionStorage" as DataType];
+        return ["localStorage", "indexedDB" as DataType];
     }
 
-    if (category === "shopping") {
-        return ["localStorage", "sessionStorage" as DataType];
+    // 对于视频网站，建议清理Service Worker
+    if (category === "video" || category === "streaming") {
+        return ["serviceWorkers"];
     }
 
+    // 对于社交媒体，建议清理本地存储
+    if (category === "social") {
+        return ["localStorage"];
+    }
+
+    // 默认情况下不主动推荐高级数据类型
     return [];
 }
 
