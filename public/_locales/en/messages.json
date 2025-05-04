@@ -104,6 +104,21 @@
     "message": "Apply Recommendation"
   },
   "closeRecommendation": {
-    "message": "Close Recommendation"
+    "message": "Close"
+  },
+  "indexedDB": {
+    "message": "IndexedDB Database"
+  },
+  "sessionStorage": {
+    "message": "Session Storage"
+  },
+  "webSQL": {
+    "message": "WebSQL Database"
+  },
+  "formData": {
+    "message": "Form Data"
+  },
+  "fileSystem": {
+    "message": "File System Storage"
   }
 }

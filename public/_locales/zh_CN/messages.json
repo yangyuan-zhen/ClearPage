@@ -108,5 +108,20 @@
   },
   "closeRecommendation": {
     "message": "关闭"
+  },
+  "indexedDB": {
+    "message": "IndexedDB 数据库"
+  },
+  "sessionStorage": {
+    "message": "SessionStorage 会话存储"
+  },
+  "webSQL": {
+    "message": "WebSQL 数据库"
+  },
+  "formData": {
+    "message": "表单数据"
+  },
+  "fileSystem": {
+    "message": "文件系统存储"
   }
 }

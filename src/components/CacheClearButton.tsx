@@ -7,6 +7,13 @@ import {
 import { cleanHistoryService } from "../services/historyService";
 import type { DataType } from "../types";
 import { getMessage } from "../utils/i18n";
+import {
+  clearIndexedDB,
+  clearSessionStorage,
+  clearWebSQL,
+  clearFormData,
+  clearFileSystem,
+} from "@/utils";
 
 // 格式化时间间隔的辅助函数
 const formatTimeSince = (timestamp: number): string => {
@@ -45,7 +52,16 @@ const CacheClearButton: React.FC = () => {
   const [currentDomain, setCurrentDomain] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
-  const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
+  const [selectedTypes, setSelectedTypes] = useState<DataType[]>([
+    "cache",
+    "cookies",
+    "localStorage",
+    "indexedDB" as DataType,
+    "sessionStorage" as DataType,
+    "webSQL" as DataType,
+    "formData" as DataType,
+    "fileSystem" as DataType,
+  ]);
   const [clearTime, setClearTime] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<DataType[]>([]);
   const [cleaningAdvice, setCleaningAdvice] = useState<string>("");
@@ -60,6 +76,26 @@ const CacheClearButton: React.FC = () => {
     { value: "cookies", label: getMessage("cookies") },
     { value: "localStorage", label: getMessage("localStorage") },
     { value: "serviceWorkers", label: getMessage("serviceWorker") },
+    {
+      value: "indexedDB" as DataType,
+      label: getMessage("indexedDB") || "IndexedDB 数据库",
+    },
+    {
+      value: "sessionStorage" as DataType,
+      label: getMessage("sessionStorage") || "SessionStorage 会话存储",
+    },
+    {
+      value: "webSQL" as DataType,
+      label: getMessage("webSQL") || "WebSQL 数据库",
+    },
+    {
+      value: "formData" as DataType,
+      label: getMessage("formData") || "表单数据",
+    },
+    {
+      value: "fileSystem" as DataType,
+      label: getMessage("fileSystem") || "文件系统存储",
+    },
   ];
 
   const sensitiveDataTypes: DataType[] = ["cookies", "localStorage"];
@@ -219,6 +255,22 @@ const CacheClearButton: React.FC = () => {
         if (tab?.id) {
           await chrome.tabs.reload(tab.id);
         }
+
+        if (selectedTypes.includes("indexedDB" as DataType)) {
+          await clearIndexedDB();
+        }
+        if (selectedTypes.includes("sessionStorage" as DataType)) {
+          await clearSessionStorage();
+        }
+        if (selectedTypes.includes("webSQL" as DataType)) {
+          await clearWebSQL();
+        }
+        if (selectedTypes.includes("formData" as DataType)) {
+          await clearFormData();
+        }
+        if (selectedTypes.includes("fileSystem" as DataType)) {
+          await clearFileSystem();
+        }
       } else {
         setMessage(getMessage("clearFailed", [result.error || "未知错误"]));
       }
@@ -332,14 +384,14 @@ const CacheClearButton: React.FC = () => {
                     </svg>
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2 items-center mt-3">
+                <div className="flex flex-wrap items-center mt-3">
                   <button
                     onClick={applyRecommendations}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 mr-3 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
                   >
                     {getMessage("applyRecommendation")}
                   </button>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 flex-1">
                     {recommendations.map((type) => (
                       <span
                         key={type}
@@ -383,8 +435,8 @@ const CacheClearButton: React.FC = () => {
             <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">
               {getMessage("selectDataTypes")}
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {dataTypeOptions.map(({ value, label }) => (
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {dataTypeOptions.slice(0, 4).map(({ value, label }) => (
                 <label
                   key={value}
                   className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors
@@ -406,10 +458,51 @@ const CacheClearButton: React.FC = () => {
                 </label>
               ))}
             </div>
+
+            {/* 高级数据类型 */}
+            <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+              高级数据类型:
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {dataTypeOptions.slice(4).map(({ value, label }) => (
+                <label
+                  key={value}
+                  className={`flex items-center gap-1 p-2 rounded-md border cursor-pointer transition-colors
+                    ${
+                      selectedTypes.includes(value)
+                        ? "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
+                        : "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700"
+                    }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes.includes(value)}
+                    onChange={() => handleTypeChange(value)}
+                    className="w-4 h-4 accent-blue-500"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-200">
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {hasSensitiveData && (
             <div className="flex gap-2 items-start p-3 mb-4 bg-amber-50 rounded-md border border-amber-200 dark:bg-amber-900 dark:border-amber-700">
+              <svg
+                className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0 dark:text-amber-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
               <p className="text-sm text-amber-700 dark:text-amber-200">
                 {getMessage("sensitiveWarning")}
               </p>
@@ -419,7 +512,7 @@ const CacheClearButton: React.FC = () => {
           <button
             onClick={handleClearCache}
             disabled={isLoading || !currentDomain || selectedTypes.length === 0}
-            className={`w-full px-3 py-2 rounded-md text-white text-sm font-medium transition-colors
+            className={`w-full px-4 py-3 rounded-md text-white text-sm font-medium transition-colors
               ${
                 isLoading || !currentDomain || selectedTypes.length === 0
                   ? "bg-blue-300 cursor-not-allowed dark:bg-blue-900"
@@ -428,6 +521,26 @@ const CacheClearButton: React.FC = () => {
           >
             {isLoading ? (
               <div className="flex gap-2 justify-center items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
                 {getMessage("clearing")}
               </div>
             ) : (
