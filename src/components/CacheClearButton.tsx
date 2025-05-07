@@ -71,6 +71,10 @@ const CacheClearButton: React.FC = () => {
   const [lastCleanTime, setLastCleanTime] = useState<number | null>(null);
   const [timeSinceLastClean, setTimeSinceLastClean] = useState<string>("");
 
+  // 添加状态标记当前选择是否与推荐一致
+  const [isRecommendationApplied, setIsRecommendationApplied] =
+    useState<boolean>(false);
+
   const dataTypeOptions: { value: DataType; label: string }[] = [
     { value: "cache", label: getMessage("cache") },
     { value: "cookies", label: getMessage("cookies") },
@@ -103,6 +107,31 @@ const CacheClearButton: React.FC = () => {
   const hasSensitiveData = selectedTypes.some((type) =>
     sensitiveDataTypes.includes(type)
   );
+
+  // 检查选择是否与推荐一致
+  const checkIfRecommendationApplied = (
+    selected: DataType[],
+    recommended: DataType[]
+  ) => {
+    if (selected.length !== recommended.length) {
+      return false;
+    }
+    // 检查所有推荐的数据类型是否都已选中
+    return (
+      recommended.every((type) => selected.includes(type)) &&
+      // 确保没有选择额外的类型
+      selected.every((type) => recommended.includes(type))
+    );
+  };
+
+  // 当选择改变时检查是否与推荐一致
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      setIsRecommendationApplied(
+        checkIfRecommendationApplied(selectedTypes, recommendations)
+      );
+    }
+  }, [selectedTypes, recommendations]);
 
   useEffect(() => {
     const getCurrentTab = async () => {
@@ -142,6 +171,8 @@ const CacheClearButton: React.FC = () => {
 
         // 自动应用智能建议到复选框选择中
         setSelectedTypes([...smartRecommendations]);
+        // 设置推荐已应用的状态
+        setIsRecommendationApplied(true);
       } catch (error) {
         console.error("获取智能推荐失败:", error);
       }
@@ -195,6 +226,7 @@ const CacheClearButton: React.FC = () => {
     setSelectedTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
+    // 注意：由于 setState 是异步的，状态更新会由上面的 useEffect 处理
   };
 
   const applyRecommendations = () => {
@@ -214,6 +246,9 @@ const CacheClearButton: React.FC = () => {
           currentMsg === successMessage ? "" : currentMsg
         );
       }, 2000);
+
+      // 设置推荐已应用的状态
+      setIsRecommendationApplied(true);
     }
   };
 
@@ -279,19 +314,19 @@ const CacheClearButton: React.FC = () => {
         }
 
         if (selectedTypes.includes("indexedDB" as DataType)) {
-          await clearIndexedDB();
+          await clearIndexedDB(currentDomain);
         }
         if (selectedTypes.includes("sessionStorage" as DataType)) {
-          await clearSessionStorage();
+          await clearSessionStorage(currentDomain);
         }
         if (selectedTypes.includes("webSQL" as DataType)) {
-          await clearWebSQL();
+          await clearWebSQL(currentDomain);
         }
         if (selectedTypes.includes("formData" as DataType)) {
-          await clearFormData();
+          await clearFormData(currentDomain);
         }
         if (selectedTypes.includes("fileSystem" as DataType)) {
-          await clearFileSystem();
+          await clearFileSystem(currentDomain);
         }
       } else {
         setMessage(getMessage("clearFailed", [result.error || "未知错误"]));
@@ -473,9 +508,11 @@ const CacheClearButton: React.FC = () => {
                     className="px-3 py-1.5 mr-3 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
                   >
                     {getMessage("applyRecommendation")}
-                    <span className="ml-1 text-xs bg-blue-500 px-1.5 py-0.5 rounded-full text-white font-normal">
-                      已应用
-                    </span>
+                    {isRecommendationApplied && (
+                      <span className="ml-1 text-xs bg-blue-500 px-1.5 py-0.5 rounded-full text-white font-normal">
+                        已应用
+                      </span>
+                    )}
                   </button>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     {recommendations.map((type) => (
@@ -634,7 +671,7 @@ const CacheClearButton: React.FC = () => {
             {isLoading ? (
               <div className="flex gap-2 justify-center items-center">
                 <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  className="mr-2 -ml-1 w-4 h-4 text-white animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
