@@ -4,7 +4,6 @@ import {
   getSmartCleaningRecommendations,
   getCleaningAdvice,
 } from "../utils/smartCleanUtils";
-import { cleanHistoryService } from "../services/historyService";
 import type { DataType } from "../types";
 import { getMessage } from "../utils/i18n";
 import {
@@ -14,39 +13,6 @@ import {
   clearFormData,
   clearFileSystem,
 } from "@/utils";
-
-// 格式化时间间隔的辅助函数
-const formatTimeSince = (timestamp: number): string => {
-  const now = Date.now();
-  const diffMs = now - timestamp;
-
-  // 小于1分钟
-  if (diffMs < 60 * 1000) {
-    return "刚刚";
-  }
-
-  // 小于1小时
-  if (diffMs < 60 * 60 * 1000) {
-    const minutes = Math.floor(diffMs / (60 * 1000));
-    return `${minutes}分钟前`;
-  }
-
-  // 小于1天
-  if (diffMs < 24 * 60 * 60 * 1000) {
-    const hours = Math.floor(diffMs / (60 * 60 * 1000));
-    return `${hours}小时前`;
-  }
-
-  // 小于30天
-  if (diffMs < 30 * 24 * 60 * 60 * 1000) {
-    const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-    return `${days}天前`;
-  }
-
-  // 30天以上
-  const date = new Date(timestamp);
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-};
 
 const CacheClearButton: React.FC = () => {
   const [currentDomain, setCurrentDomain] = useState<string>("");
@@ -67,38 +33,63 @@ const CacheClearButton: React.FC = () => {
   const [cleaningAdvice, setCleaningAdvice] = useState<string>("");
   const [showRecommendations, setShowRecommendations] = useState<boolean>(true);
 
-  // 添加上次清理时间的状态
-  const [lastCleanTime, setLastCleanTime] = useState<number | null>(null);
-  const [timeSinceLastClean, setTimeSinceLastClean] = useState<string>("");
-
   // 添加状态标记当前选择是否与推荐一致
   const [isRecommendationApplied, setIsRecommendationApplied] =
     useState<boolean>(false);
 
-  const dataTypeOptions: { value: DataType; label: string }[] = [
-    { value: "cache", label: getMessage("cache") },
-    { value: "cookies", label: getMessage("cookies") },
-    { value: "localStorage", label: getMessage("localStorage") },
-    { value: "serviceWorkers", label: getMessage("serviceWorker") },
+  // 在组件状态中添加清理进度相关状态
+  const [isCleaningComplete, setIsCleaningComplete] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"standard" | "smart">("smart");
+
+  const dataTypeOptions: {
+    value: DataType;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: "cache",
+      label: getMessage("cache"),
+      description: "网站图像、脚本和其他媒体文件的临时存储",
+    },
+    {
+      value: "cookies",
+      label: getMessage("cookies"),
+      description: "网站保存的登录状态、偏好设置等信息",
+    },
+    {
+      value: "localStorage",
+      label: getMessage("localStorage"),
+      description: "网站在您浏览器中存储的持久数据",
+    },
+    {
+      value: "serviceWorkers",
+      label: getMessage("serviceWorker"),
+      description: "网站的后台脚本，可能会导致缓存问题",
+    },
     {
       value: "indexedDB" as DataType,
       label: getMessage("indexedDB") || "IndexedDB 数据库",
+      description: "网站存储的结构化数据",
     },
     {
       value: "sessionStorage" as DataType,
       label: getMessage("sessionStorage") || "SessionStorage 会话存储",
+      description: "本次会话中网站临时存储的数据",
     },
     {
       value: "webSQL" as DataType,
       label: getMessage("webSQL") || "WebSQL 数据库",
+      description: "旧版本网站使用的数据库存储",
     },
     {
       value: "formData" as DataType,
       label: getMessage("formData") || "表单数据",
+      description: "保存的表单输入和自动完成数据",
     },
     {
       value: "fileSystem" as DataType,
       label: getMessage("fileSystem") || "文件系统存储",
+      description: "网站在您设备上存储的文件",
     },
   ];
 
@@ -152,12 +143,8 @@ const CacheClearButton: React.FC = () => {
 
     const getRecommendations = async () => {
       try {
-        const history = await cleanHistoryService.getCleanHistory();
-
-        const smartRecommendations = getSmartCleaningRecommendations(
-          currentDomain,
-          history.map((h) => ({ domain: h.domain, dataTypes: h.dataTypes }))
-        );
+        const smartRecommendations =
+          getSmartCleaningRecommendations(currentDomain);
 
         // 确保至少包含基本缓存
         if (!smartRecommendations.includes("cache")) {
@@ -180,47 +167,6 @@ const CacheClearButton: React.FC = () => {
 
     getRecommendations();
   }, [currentDomain]);
-
-  // 添加一个新的useEffect来获取上次清理时间
-  useEffect(() => {
-    if (!currentDomain) return;
-
-    const getLastCleanTime = async () => {
-      try {
-        // 获取当前域名的清理历史
-        const domainHistory = await cleanHistoryService.getDomainHistory(
-          currentDomain
-        );
-
-        if (domainHistory.length > 0) {
-          // 按时间排序，获取最近一次清理的时间
-          const sortedHistory = [...domainHistory].sort(
-            (a, b) => b.timestamp - a.timestamp
-          );
-          const lastClean = sortedHistory[0].timestamp;
-
-          setLastCleanTime(lastClean);
-          setTimeSinceLastClean(formatTimeSince(lastClean));
-        } else {
-          setLastCleanTime(null);
-          setTimeSinceLastClean("");
-        }
-      } catch (error) {
-        console.error("获取上次清理时间失败:", error);
-      }
-    };
-
-    getLastCleanTime();
-
-    // 定时更新时间差显示
-    const intervalId = setInterval(() => {
-      if (lastCleanTime) {
-        setTimeSinceLastClean(formatTimeSince(lastCleanTime));
-      }
-    }, 60000); // 每分钟更新一次
-
-    return () => clearInterval(intervalId);
-  }, [currentDomain, lastCleanTime]);
 
   const handleTypeChange = (type: DataType) => {
     setSelectedTypes((prev) =>
@@ -277,446 +223,435 @@ const CacheClearButton: React.FC = () => {
     setIsLoading(true);
     setMessage("");
     setClearTime(null);
+    setIsCleaningComplete(false);
 
     try {
       const startTime = performance.now();
 
-      const result = await clearDomainCache({
-        domain: currentDomain,
-        dataTypes: selectedTypes,
-      });
+      // 依次清理每种类型的数据
+      for (const dataType of selectedTypes) {
+        switch (dataType) {
+          case "cache":
+          case "cookies":
+          case "localStorage":
+          case "serviceWorkers":
+            await clearDomainCache({
+              domain: currentDomain,
+              dataTypes: [dataType],
+            });
+            break;
+          case "indexedDB":
+            await clearIndexedDB(currentDomain);
+            break;
+          case "sessionStorage":
+            await clearSessionStorage(currentDomain);
+            break;
+          case "webSQL":
+            await clearWebSQL(currentDomain);
+            break;
+          case "formData":
+            await clearFormData(currentDomain);
+            break;
+          case "fileSystem":
+            await clearFileSystem(currentDomain);
+            break;
+          default:
+            console.warn(`未知的数据类型: ${dataType}`);
+        }
+      }
 
       const endTime = performance.now();
-      const timeUsed = Math.round(endTime - startTime);
-      setClearTime(timeUsed);
+      setClearTime(Math.round(endTime - startTime));
+      setIsCleaningComplete(true);
 
-      if (result.success) {
-        // 保存清理历史
-        await cleanHistoryService.saveCleanHistory(
-          currentDomain,
-          selectedTypes
-        );
-
-        // 更新上次清理时间
-        const now = Date.now();
-        setLastCleanTime(now);
-        setTimeSinceLastClean("刚刚");
-
-        setMessage(getMessage("clearSuccess"));
-
-        const [tab] = await chrome.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-
-        if (tab?.id) {
-          await chrome.tabs.reload(tab.id);
-        }
-
-        if (selectedTypes.includes("indexedDB" as DataType)) {
-          await clearIndexedDB(currentDomain);
-        }
-        if (selectedTypes.includes("sessionStorage" as DataType)) {
-          await clearSessionStorage(currentDomain);
-        }
-        if (selectedTypes.includes("webSQL" as DataType)) {
-          await clearWebSQL(currentDomain);
-        }
-        if (selectedTypes.includes("formData" as DataType)) {
-          await clearFormData(currentDomain);
-        }
-        if (selectedTypes.includes("fileSystem" as DataType)) {
-          await clearFileSystem(currentDomain);
-        }
-      } else {
-        setMessage(getMessage("clearFailed", [result.error || "未知错误"]));
-      }
+      // 清理完成后的消息
+      setMessage("清理成功！页面数据已被清除。");
     } catch (error) {
-      console.error("清除失败:", error);
+      console.error("清理缓存时出错:", error);
       setMessage(
-        `清除失败: ${error instanceof Error ? error.message : String(error)}`
+        `清理失败: ${error instanceof Error ? error.message : "未知错误"}`
       );
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 切换显示/隐藏推荐
   const toggleRecommendations = () => {
-    setShowRecommendations(!showRecommendations);
+    setShowRecommendations((prev) => !prev);
   };
 
-  // 添加全选/取消全选功能
+  // 选择所有或基本类型
   const handleSelectAll = (isBasic = false) => {
     if (isBasic) {
-      // 选择基本数据类型
-      const basicTypes: DataType[] = [
-        "cache",
-        "cookies",
-        "localStorage",
-        "serviceWorkers",
-      ];
-      setSelectedTypes((prev) => {
-        const currentBasicSelected = basicTypes.every((type) =>
-          prev.includes(type)
-        );
-
-        if (currentBasicSelected) {
-          // 当前全部已选中，则取消全部选择
-          return prev.filter((type) => !basicTypes.includes(type));
-        } else {
-          // 当前未全部选中，则全部选中
-          const newSelected = [...prev];
-          basicTypes.forEach((type) => {
-            if (!newSelected.includes(type)) {
-              newSelected.push(type);
-            }
-          });
-          return newSelected;
-        }
-      });
+      // 基本类型: 缓存和cookies
+      setSelectedTypes(["cache", "cookies"]);
     } else {
-      // 选择高级数据类型
-      const advancedTypes: DataType[] = [
-        "indexedDB" as DataType,
-        "sessionStorage" as DataType,
-        "webSQL" as DataType,
-        "formData" as DataType,
-        "fileSystem" as DataType,
-      ];
-
-      setSelectedTypes((prev) => {
-        const currentAdvancedSelected = advancedTypes.every((type) =>
-          prev.includes(type)
-        );
-
-        if (currentAdvancedSelected) {
-          // 当前全部已选中，则取消全部选择
-          return prev.filter((type) => !advancedTypes.includes(type));
-        } else {
-          // 当前未全部选中，则全部选中
-          const newSelected = [...prev];
-          advancedTypes.forEach((type) => {
-            if (!newSelected.includes(type)) {
-              newSelected.push(type);
-            }
-          });
-          return newSelected;
-        }
-      });
+      // 全选
+      setSelectedTypes(dataTypeOptions.map((opt) => opt.value));
     }
   };
 
+  // 根据当前域名获取可读性更好的网站名称
+  const getFriendlySiteName = (domain: string): string => {
+    if (!domain) return "当前网站";
+
+    // 移除www.前缀和子域名
+    const baseDomain = domain
+      .replace(/^www\./, "")
+      .split(".")
+      .slice(-2)
+      .join(".");
+
+    // 添加网站名称映射
+    const siteNameMap: Record<string, string> = {
+      "google.com": "Google",
+      "baidu.com": "百度",
+      "bilibili.com": "哔哩哔哩",
+      "taobao.com": "淘宝",
+      "jd.com": "京东",
+      "zhihu.com": "知乎",
+      "sina.com.cn": "新浪",
+      "qq.com": "腾讯",
+      "163.com": "网易",
+    };
+
+    return siteNameMap[baseDomain] || domain;
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden bg-white rounded-md border shadow-sm dark:bg-gray-800 dark:border-gray-700">
-        <div className="p-3 bg-gray-50 border-b dark:bg-gray-900 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2 items-center">
-              <svg
-                className="w-4 h-4 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium">
-                {getMessage("currentDomain")}:
-              </span>
-              <span className="text-sm font-semibold" data-testid="domain-text">
-                {currentDomain}
-              </span>
-            </div>
-            {/* 显示上次清理时间 */}
-            {timeSinceLastClean && (
-              <div className="flex items-center text-xs text-gray-500">
-                <svg
-                  className="w-3.5 h-3.5 mr-1 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>上次清理: {timeSinceLastClean}</span>
-              </div>
-            )}
+    <div className="space-y-6">
+      {/* 页面上下文信息 */}
+      <div className="flex items-center p-4 text-blue-800 bg-blue-50 rounded-lg">
+        <svg
+          className="mr-3 w-5 h-5 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <div>
+          <div className="mb-1 font-medium">
+            当前网站：{getFriendlySiteName(currentDomain)} ({currentDomain})
+          </div>
+          <div className="text-sm">
+            您可以选择要清理的数据类型，然后点击"开始清理"按钮
           </div>
         </div>
+      </div>
 
-        {recommendations.length > 0 && (
-          <>
-            {showRecommendations ? (
-              <div className="p-3 bg-blue-50 border-b border-blue-100 dark:bg-blue-950 dark:border-blue-900">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-2 items-start">
-                    <svg
-                      className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+      {/* 选择模式标签页 */}
+      <div className="border-b border-gray-200">
+        <nav className="flex -mb-px" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab("smart")}
+            className={`${
+              activeTab === "smart"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            } w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm`}
+          >
+            智能清理
+          </button>
+          <button
+            onClick={() => setActiveTab("standard")}
+            className={`${
+              activeTab === "standard"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            } w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm`}
+          >
+            自定义清理
+          </button>
+        </nav>
+      </div>
+
+      {/* 智能清理模式 */}
+      {activeTab === "smart" && (
+        <div className="space-y-4">
+          {/* 智能推荐区域 */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-medium text-gray-900">智能推荐</h3>
+              <button
+                onClick={applyRecommendations}
+                disabled={isRecommendationApplied}
+                className={`px-3 py-1 text-sm rounded-full ${
+                  isRecommendationApplied
+                    ? "text-gray-500 bg-gray-100 cursor-not-allowed"
+                    : "text-blue-700 bg-blue-100 hover:bg-blue-200"
+                }`}
+              >
+                {isRecommendationApplied ? "已应用" : "应用建议"}
+              </button>
+            </div>
+
+            <div className="p-3 bg-white rounded-md shadow-sm">
+              <p className="mb-3 text-sm text-gray-600">
+                {cleaningAdvice ||
+                  "基于您的浏览历史和网站特性，我们建议清理以下数据类型："}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {recommendations.map((type) => {
+                  const option = dataTypeOptions.find(
+                    (opt) => opt.value === type
+                  );
+                  return (
+                    <div
+                      key={type}
+                      className="flex items-center p-2 bg-blue-50 rounded-md border border-blue-100"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">
-                        {getMessage("cleaningRecommendation")}
-                      </p>
-                      <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                        {cleaningAdvice}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    aria-label={getMessage("closeRecommendation")}
-                    className="p-1 ml-2 text-blue-500 rounded-full transition-colors hover:bg-blue-100 dark:hover:bg-blue-900"
-                    onClick={toggleRecommendations}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center mt-3">
-                  <button
-                    onClick={applyRecommendations}
-                    className="px-3 py-1.5 mr-3 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  >
-                    {getMessage("applyRecommendation")}
-                    {isRecommendationApplied && (
-                      <span className="ml-1 text-xs bg-blue-500 px-1.5 py-0.5 rounded-full text-white font-normal">
-                        已应用
-                      </span>
-                    )}
-                  </button>
-                  <div className="flex flex-wrap gap-1.5 flex-1">
-                    {recommendations.map((type) => (
-                      <span
-                        key={type}
-                        className="text-xs bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800"
+                      <svg
+                        className="mr-2 w-4 h-4 text-blue-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
                       >
-                        {dataTypeOptions.find((opt) => opt.value === type)
-                          ?.label || type}
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        {option?.label}
                       </span>
-                    ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 智能清理按钮 */}
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={handleClearCache}
+              disabled={isLoading || selectedTypes.length === 0}
+              className={`px-6 py-3 text-white font-medium rounded-lg flex items-center justify-center w-full ${
+                isLoading || selectedTypes.length === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <svg
+                    className="mr-2 -ml-1 w-4 h-4 text-white animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  清理中...
+                </>
+              ) : (
+                <>智能清理数据</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 自定义清理模式 */}
+      {activeTab === "standard" && (
+        <div className="space-y-4">
+          {/* 快速选择按钮 */}
+          <div className="flex mb-2 space-x-2">
+            <button
+              onClick={() => handleSelectAll(false)}
+              className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              全选
+            </button>
+            <button
+              onClick={() => handleSelectAll(true)}
+              className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              只选基本类型
+            </button>
+            <button
+              onClick={() => setSelectedTypes([])}
+              className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              清除选择
+            </button>
+          </div>
+
+          {/* 数据类型选择网格 */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {dataTypeOptions.map(({ value, label, description }) => (
+              <div
+                key={value}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  selectedTypes.includes(value)
+                    ? "bg-blue-50 border-blue-200 shadow-sm"
+                    : "bg-white border-gray-200"
+                }`}
+                onClick={() => handleTypeChange(value)}
+              >
+                <div className="flex items-start">
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes.includes(value)}
+                    onChange={() => handleTypeChange(value)}
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <div className="ml-3">
+                    <div className="text-sm font-medium text-gray-900">
+                      {label}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {description}
+                    </div>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex justify-center p-1 border-b dark:border-gray-700">
-                <button
-                  onClick={toggleRecommendations}
-                  className="flex gap-1 items-center px-3 py-1 text-xs text-blue-600 bg-blue-50 rounded-full border border-blue-100 transition-colors hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-900 hover:dark:bg-blue-900"
-                >
+            ))}
+          </div>
+
+          {/* 清理按钮 */}
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={handleClearCache}
+              disabled={isLoading || selectedTypes.length === 0}
+              className={`px-5 py-2 rounded-lg flex items-center space-x-2 ${
+                isLoading || selectedTypes.length === 0
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : sensitiveDataTypes.some((type) =>
+                      selectedTypes.includes(type)
+                    )
+                  ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+            >
+              {isLoading ? (
+                <>
                   <svg
-                    className="w-3.5 h-3.5"
+                    className="w-5 h-5 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
                     fill="none"
-                    stroke="currentColor"
                     viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>清理中...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
-                  {getMessage("showRecommendation")}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        <div className="p-3">
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {getMessage("selectDataTypes")}
-              </p>
-              <button
-                onClick={() => handleSelectAll(true)}
-                className="text-xs text-blue-600 hover:text-blue-800"
-              >
-                {dataTypeOptions
-                  .slice(0, 4)
-                  .every(({ value }) => selectedTypes.includes(value))
-                  ? "取消全选"
-                  : "全选基本类型"}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {dataTypeOptions.slice(0, 4).map(({ value, label }) => (
-                <label
-                  key={value}
-                  className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors
-                    ${
-                      selectedTypes.includes(value)
-                        ? "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700"
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes(value)}
-                    onChange={() => handleTypeChange(value)}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-200">
-                    {label}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {/* 高级数据类型 */}
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                高级数据类型:
-              </p>
-              <button
-                onClick={() => handleSelectAll(false)}
-                className="text-xs text-blue-600 hover:text-blue-800"
-              >
-                {dataTypeOptions
-                  .slice(4)
-                  .every(({ value }) => selectedTypes.includes(value))
-                  ? "取消全选"
-                  : "全选高级类型"}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {dataTypeOptions.slice(4).map(({ value, label }) => (
-                <label
-                  key={value}
-                  className={`flex items-center gap-1 p-2 rounded-md border cursor-pointer transition-colors
-                    ${
-                      selectedTypes.includes(value)
-                        ? "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700"
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes(value)}
-                    onChange={() => handleTypeChange(value)}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <span className="text-xs text-gray-700 dark:text-gray-200">
-                    {label}
-                  </span>
-                </label>
-              ))}
-            </div>
+                  <span>清理选中数据 ({selectedTypes.length})</span>
+                </>
+              )}
+            </button>
           </div>
+        </div>
+      )}
 
-          {hasSensitiveData && (
-            <div className="flex gap-2 items-start p-3 mb-4 bg-amber-50 rounded-md border border-amber-200 dark:bg-amber-900 dark:border-amber-700">
+      {/* 清理结果消息 */}
+      {(message || clearTime !== null) && (
+        <div
+          className={`mt-4 p-4 rounded-lg ${
+            isCleaningComplete
+              ? "bg-green-50 border border-green-100"
+              : "bg-yellow-50 border border-yellow-100"
+          }`}
+        >
+          <div className="flex">
+            {isCleaningComplete ? (
               <svg
-                className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0 dark:text-amber-300"
+                className="mr-3 w-6 h-6 text-green-500"
                 fill="none"
-                stroke="currentColor"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
                 />
               </svg>
-              <p className="text-sm text-amber-700 dark:text-amber-200">
-                {getMessage("sensitiveWarning")}
-              </p>
-            </div>
-          )}
-
-          <button
-            onClick={handleClearCache}
-            disabled={isLoading || !currentDomain || selectedTypes.length === 0}
-            className={`w-full px-4 py-3 rounded-md text-white text-sm font-medium transition-colors
-              ${
-                isLoading || !currentDomain || selectedTypes.length === 0
-                  ? "bg-blue-300 cursor-not-allowed dark:bg-blue-900"
-                  : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-              }`}
-          >
-            {isLoading ? (
-              <div className="flex gap-2 justify-center items-center">
-                <svg
-                  className="mr-2 -ml-1 w-4 h-4 text-white animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                {getMessage("clearing")}
-              </div>
             ) : (
-              getMessage("clearData")
+              <svg
+                className="mr-3 w-6 h-6 text-yellow-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
             )}
-          </button>
-
-          {message && (
-            <div
-              className={`mt-4 p-3 rounded-md flex items-start gap-2
-                ${
-                  message.includes("成功")
-                    ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700"
-                    : "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-700"
-                }`}
-              data-testid="status-message"
-            >
-              {message}
-              {clearTime && message.includes("成功") && (
-                <span className="ml-1 text-xs text-gray-500">
-                  (用时 {clearTime} ms)
-                </span>
+            <div>
+              <p
+                className={
+                  isCleaningComplete ? "text-green-700" : "text-yellow-700"
+                }
+              >
+                {message}
+              </p>
+              {clearTime !== null && (
+                <p className="mt-1 text-sm text-gray-600">
+                  清理完成，耗时 {clearTime} 毫秒
+                </p>
+              )}
+              {isCleaningComplete && (
+                <p className="mt-1 text-sm text-gray-600">
+                  您可能需要刷新页面以查看清理效果
+                </p>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

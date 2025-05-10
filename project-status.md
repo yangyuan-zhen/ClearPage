@@ -344,7 +344,26 @@
      </div>
      ```
 
-  2. 优化数据类型布局:
+  2. 统一各组件宽度:
+
+     ```tsx
+     // CacheClearButton组件
+     <div className="..." style={{ width: "450px" }}>
+       {/* 组件内容 */}
+     </div>
+
+     // PerformancePanel组件
+     <div className="..." style={{ width: "450px" }}>
+       {/* 组件内容 */}
+     </div>
+
+     // SettingsPanel组件
+     <div className="..." style={{ width: "450px" }}>
+       {/* 组件内容 */}
+     </div>
+     ```
+
+  3. 优化数据类型布局:
 
      ```tsx
      // 基础数据类型保持双列
@@ -362,7 +381,7 @@
      </div>
      ```
 
-  3. 改进视觉层次:
+  4. 改进视觉层次:
      - 增加了标题分隔，清晰区分基础和高级数据类型
      - 优化了数据类型标签的大小和边距
      - 改进了按钮样式，增加了视觉反馈效果
@@ -381,7 +400,176 @@
   3. 提升了视觉层次感，增强了用户体验
   4. 保持了移动设备上的良好兼容性
 
-#### 7. 自定义清理规则实现
+#### 7. 插件界面宽度进一步优化
+
+- **问题描述**: 随着功能增加，450px 宽度仍然不足以完全展示所有内容，需要进一步优化
+- **解决时间**: 2025-05-15
+- **解决方案**:
+
+  1. 进一步增加插件宽度:
+
+     ```tsx
+     // 从450px扩展到750-800px
+     <div className="min-w-[750px] max-w-[800px] min-h-[200px] bg-white">
+       {/* 插件内容 */}
+     </div>
+     ```
+
+  2. 统一更新各组件宽度:
+
+     ```tsx
+     // CacheClearButton组件
+     <div className="..." style={{ width: "750px" }}>
+       {/* 组件内容 */}
+     </div>
+
+     // PerformancePanel组件
+     <div className="..." style={{ width: "750px" }}>
+       {/* 组件内容 */}
+     </div>
+
+     // SettingsPanel组件
+     <div className="..." style={{ width: "750px" }}>
+       {/* 组件内容 */}
+     </div>
+     ```
+
+  3. 多列布局优化:
+
+     ```tsx
+     // 基础数据类型改为四列布局
+     <div className="grid grid-cols-4 gap-2 mb-2">
+       {dataTypeOptions.slice(0, 4).map(({ value, label }) => (
+         // 数据类型选择框
+       ))}
+     </div>
+
+     // 高级数据类型改为五列布局
+     <div className="grid grid-cols-5 gap-2">
+       {dataTypeOptions.slice(4).map(({ value, label }) => (
+         // 高级数据类型选择框
+       ))}
+     </div>
+
+     // 性能指标改为五列显示
+     <div className="grid grid-cols-5 gap-3">
+       {/* 性能指标内容 */}
+     </div>
+
+     // 资源统计改为四列布局
+     <div className="grid grid-cols-4 gap-4">
+       {/* 资源统计内容 */}
+     </div>
+     ```
+
+  4. 历史记录和推荐区域优化:
+
+     - 增加了历史记录数据类型显示区域宽度
+     - 优化了推荐数据类型的显示间距
+     - 改进了数据类型标签的视觉效果
+
+  5. 内容边距优化:
+
+     ```tsx
+     // 为主内容区域添加右侧内边距
+     <main className="flex flex-col gap-6 p-4 pr-6">
+       {/* 组件内容 */}
+     </main>
+
+     // 为各组件内容添加右侧内边距
+     <div className="p-3 pr-5">
+       {/* 组件内容 */}
+     </div>
+     ```
+
+- **技术要点**:
+
+  - 更大的宽度设计适应更复杂的功能需求
+  - 多列网格布局充分利用空间
+  - 优化数据展示密度，提高信息获取效率
+  - 保持视觉一致性和层次感
+  - 添加适当内边距，确保内容不会紧贴边缘
+
+- **改进效果**:
+  1. 显著减少了滚动需求，提高了信息获取效率
+  2. 更好地展示了数据类型选择和性能指标，一屏可见更多信息
+  3. 历史记录和推荐区域显示更完整，减少了文本截断
+  4. 整体界面更加专业，适合高级用户使用
+  5. 内容与右边缘保持适当距离，提升了视觉舒适度
+
+#### 8. 移除清理历史记录功能
+
+- **问题描述**: 清理历史记录功能增加了不必要的复杂性，用户反馈使用频率低
+- **解决时间**: 2025-05-20
+- **解决方案**:
+
+  1. 移除历史记录相关组件和 UI 元素:
+
+     ```tsx
+     // 移除历史按钮和显示区域
+     <div className="flex items-center gap-3">
+       {/* 移除上次清理时间显示 */}
+       {/* 移除清理历史按钮 */}
+     </div>;
+
+     {
+       /* 移除清理历史记录面板 */
+     }
+     ```
+
+  2. 移除历史记录相关状态和函数:
+
+     ```tsx
+     // 移除状态
+     const [lastCleanTime, setLastCleanTime] = useState<number | null>(null);
+     const [timeSinceLastClean, setTimeSinceLastClean] = useState<string>("");
+     const [cleaningHistory, setCleaningHistory] = useState<
+       { timestamp: number; dataTypes: DataType[] }[]
+     >([]);
+     const [showCleaningHistory, setShowCleaningHistory] =
+       useState<boolean>(false);
+
+     // 移除函数
+     const toggleCleaningHistory = () => {
+       setShowCleaningHistory(!showCleaningHistory);
+     };
+     ```
+
+  3. 移除历史记录服务:
+
+     ```tsx
+     // 移除导入
+     import { cleanHistoryService } from "../services/historyService";
+
+     // 移除历史记录保存
+     await cleanHistoryService.saveCleanHistory(currentDomain, selectedTypes);
+     ```
+
+  4. 简化智能清理推荐算法:
+
+     ```tsx
+     export const getSmartCleaningRecommendations = (
+       domain: string
+     ): DataType[] => {
+       // 基于网站类型的推荐，不再依赖历史记录
+       // ...
+     };
+     ```
+
+- **技术要点**:
+
+  - 移除不必要的功能，简化代码结构
+  - 优化智能推荐算法，不再依赖历史数据
+  - 保持核心功能不受影响
+  - 减少存储 API 的使用，提高性能
+
+- **改进效果**:
+  1. 界面更加简洁，聚焦于核心清理功能
+  2. 减少了代码复杂度，提高了可维护性
+  3. 减少了存储 API 的使用，提高了性能
+  4. 简化了用户体验，减少了不必要的功能干扰
+
+#### 9. 自定义清理规则实现
 
 - **问题描述**: 用户需要根据自己的习惯和需求自定义清理规则，并支持自动定时清理
 - **解决时间**: 2025-05-03
@@ -491,7 +679,7 @@
   3. 实现了自动定时清理功能，支持每日、每周、每月频率
   4. 改善了用户体验，减少了手动清理的操作需求
 
-#### 8. 自动性能检测与智能建议应用
+#### 10. 自动性能检测与智能建议应用
 
 - **问题描述**: 用户需要手动点击按钮才能执行性能检测或应用智能清理建议，操作流程不够便捷
 - **解决时间**: 2025-05-10
@@ -672,7 +860,7 @@
 - **事务处理**: 对于数据库类型，使用事务确保完整性
 - **清理验证**: 清理后进行校验，确保数据已被完全清除
 
-## �� 更新日志
+## 更新日志
 
 ### 2025-05-10
 

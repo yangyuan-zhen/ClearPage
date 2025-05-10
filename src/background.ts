@@ -40,47 +40,73 @@ const clearDataForDomain = async (domain: string, dataTypes: DataType[]): Promis
         const globalTypes: DataType[] = ['cache', 'serviceWorkers', 'indexedDB', 'sessionStorage', 'webSQL', 'formData', 'fileSystem'];
         const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
 
-        const clearTasks = [];
+        // 使用批处理方式清理数据，避免一次性处理过多数据导致浏览器卡顿
+        const batchSize = 2; // 每批处理的数据类型数量
+        const clearResults = [];
 
-        // 处理支持域名过滤的类型
+        // 处理支持域名过滤的类型（分批处理）
         if (originFiltered.length > 0) {
-            const removalOptions: chrome.browsingData.RemovalOptions = {
-                since: 0,
-                origins: domain.includes('*')
-                    ? undefined
-                    : [`https://${domain}`, `http://${domain}`]
-            };
+            // 将数据类型分批
+            for (let i = 0; i < originFiltered.length; i += batchSize) {
+                const batch = originFiltered.slice(i, i + batchSize);
 
-            const dataTypeOptions: chrome.browsingData.DataTypeSet = {
-                cookies: originFiltered.includes('cookies'),
-                localStorage: originFiltered.includes('localStorage'),
-            };
+                const removalOptions: chrome.browsingData.RemovalOptions = {
+                    since: 0,
+                    origins: domain.includes('*')
+                        ? undefined
+                        : [`https://${domain}`, `http://${domain}`]
+                };
 
-            clearTasks.push(chrome.browsingData.remove(removalOptions, dataTypeOptions));
+                const dataTypeOptions: chrome.browsingData.DataTypeSet = {};
+                batch.forEach(type => {
+                    if (type === 'cookies') dataTypeOptions.cookies = true;
+                    if (type === 'localStorage') dataTypeOptions.localStorage = true;
+                });
+
+                // 使用Promise处理每一批
+                const batchPromise = chrome.browsingData.remove(removalOptions, dataTypeOptions);
+                clearResults.push(batchPromise);
+
+                // 在批次之间添加短暂延迟，避免浏览器卡顿
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
         }
 
-        // 处理不支持域名过滤的类型（全局清除）
+        // 处理不支持域名过滤的类型（分批处理）
         if (globalFiltered.length > 0) {
-            const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
-                since: 0
-            };
+            // 将数据类型分批
+            for (let i = 0; i < globalFiltered.length; i += batchSize) {
+                const batch = globalFiltered.slice(i, i + batchSize);
 
-            const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {
-                cache: globalFiltered.includes('cache'),
-                serviceWorkers: globalFiltered.includes('serviceWorkers'),
-                indexedDB: globalFiltered.includes('indexedDB'),
-                webSQL: globalFiltered.includes('webSQL'),
-                formData: globalFiltered.includes('formData'),
-                fileSystems: globalFiltered.includes('fileSystem')
-            };
+                const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
+                    since: 0
+                };
 
-            clearTasks.push(
-                chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions)
-            );
+                const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {};
+                batch.forEach(type => {
+                    if (type === 'cache') globalDataTypeOptions.cache = true;
+                    if (type === 'serviceWorkers') globalDataTypeOptions.serviceWorkers = true;
+                    if (type === 'indexedDB') globalDataTypeOptions.indexedDB = true;
+                    if (type === 'webSQL') globalDataTypeOptions.webSQL = true;
+                    if (type === 'formData') globalDataTypeOptions.formData = true;
+                    if (type === 'fileSystem') globalDataTypeOptions.fileSystems = true;
+                    if (type === 'sessionStorage') {
+                        // sessionStorage 需要特殊处理，因为Chrome API不直接支持
+                        // 这里我们会在后续代码中处理
+                    }
+                });
+
+                // 使用Promise处理每一批
+                const batchPromise = chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions);
+                clearResults.push(batchPromise);
+
+                // 在批次之间添加短暂延迟，避免浏览器卡顿
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
         }
 
-        // 使用 Promise.all 并行处理不同类型的清除任务
-        await Promise.all(clearTasks);
+        // 等待所有清理任务完成
+        await Promise.all(clearResults);
         return true;
     } catch (error) {
         console.error("清理数据失败:", error);
@@ -97,62 +123,93 @@ chrome.runtime.onMessage.addListener((
     if (request.type === 'CLEAR_CACHE') {
         const { domain, dataTypes, since } = request.payload;
 
-        // 定义支持域名过滤的类型
-        const originSupportedTypes = ['cookies', 'localStorage'];
-        const originFiltered = dataTypes.filter(type => originSupportedTypes.includes(type));
-
-        // 定义不支持域名过滤的类型（需全局清除）
-        const globalTypes = ['cache', 'serviceWorkers', 'indexedDB', 'sessionStorage', 'webSQL', 'formData', 'fileSystem'];
-        const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
-
-        const clearTasks = [];
-
-        // 处理支持域名过滤的类型
-        if (originFiltered.length > 0) {
-            const removalOptions: chrome.browsingData.RemovalOptions = {
-                since: since || 0,
-                origins: domain ? [`https://${domain}`, `http://${domain}`] : undefined
-            };
-
-            const dataTypeOptions: chrome.browsingData.DataTypeSet = {
-                cookies: originFiltered.includes('cookies'),
-                localStorage: originFiltered.includes('localStorage'),
-            };
-
-            clearTasks.push(chrome.browsingData.remove(removalOptions, dataTypeOptions));
-        }
-
-        // 处理不支持域名过滤的类型（全局清除）
-        if (globalFiltered.length > 0) {
-            const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
-                since: since || 0
-            };
-
-            const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {
-                cache: globalFiltered.includes('cache'),
-                serviceWorkers: globalFiltered.includes('serviceWorkers'),
-                indexedDB: globalFiltered.includes('indexedDB'),
-                webSQL: globalFiltered.includes('webSQL'),
-                formData: globalFiltered.includes('formData'),
-                fileSystems: globalFiltered.includes('fileSystem')
-            };
-
-            clearTasks.push(
-                chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions)
-            );
-        }
-
         // 记录开始时间
         const startTime = Date.now();
 
-        // 使用 Promise.all 并行处理不同类型的清除任务
-        Promise.all(clearTasks)
-            .then(() => {
-                sendResponse({ success: true, timeUsed: Date.now() - startTime });
-            })
-            .catch((error) => {
-                sendResponse({ success: false, error: error.message });
-            });
+        // 使用Web Workers处理复杂的清理任务（如果可能的话）
+        const processDataClear = async () => {
+            try {
+                // 定义支持域名过滤的类型
+                const originSupportedTypes = ['cookies', 'localStorage'];
+                const originFiltered = dataTypes.filter(type => originSupportedTypes.includes(type));
+
+                // 定义不支持域名过滤的类型（需全局清除）
+                const globalTypes = ['cache', 'serviceWorkers', 'indexedDB', 'sessionStorage', 'webSQL', 'formData', 'fileSystem'];
+                const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
+
+                // 使用批处理方式清理数据
+                const batchSize = 2; // 每批处理的数据类型数量
+                const clearResults = [];
+
+                // 处理支持域名过滤的类型（分批处理）
+                if (originFiltered.length > 0) {
+                    // 将数据类型分批
+                    for (let i = 0; i < originFiltered.length; i += batchSize) {
+                        const batch = originFiltered.slice(i, i + batchSize);
+
+                        const removalOptions: chrome.browsingData.RemovalOptions = {
+                            since: since || 0,
+                            origins: domain ? [`https://${domain}`, `http://${domain}`] : undefined
+                        };
+
+                        const dataTypeOptions: chrome.browsingData.DataTypeSet = {};
+                        batch.forEach(type => {
+                            if (type === 'cookies') dataTypeOptions.cookies = true;
+                            if (type === 'localStorage') dataTypeOptions.localStorage = true;
+                        });
+
+                        // 使用Promise处理每一批
+                        const batchPromise = chrome.browsingData.remove(removalOptions, dataTypeOptions);
+                        clearResults.push(batchPromise);
+
+                        // 在批次之间添加短暂延迟，避免浏览器卡顿
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                }
+
+                // 处理不支持域名过滤的类型（分批处理）
+                if (globalFiltered.length > 0) {
+                    // 将数据类型分批
+                    for (let i = 0; i < globalFiltered.length; i += batchSize) {
+                        const batch = globalFiltered.slice(i, i + batchSize);
+
+                        const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
+                            since: since || 0
+                        };
+
+                        const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {};
+                        batch.forEach(type => {
+                            if (type === 'cache') globalDataTypeOptions.cache = true;
+                            if (type === 'serviceWorkers') globalDataTypeOptions.serviceWorkers = true;
+                            if (type === 'indexedDB') globalDataTypeOptions.indexedDB = true;
+                            if (type === 'webSQL') globalDataTypeOptions.webSQL = true;
+                            if (type === 'formData') globalDataTypeOptions.formData = true;
+                            if (type === 'fileSystem') globalDataTypeOptions.fileSystems = true;
+                        });
+
+                        // 使用Promise处理每一批
+                        if (Object.keys(globalDataTypeOptions).length > 0) {
+                            const batchPromise = chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions);
+                            clearResults.push(batchPromise);
+                        }
+
+                        // 在批次之间添加短暂延迟，避免浏览器卡顿
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                }
+
+                // 等待所有清理任务完成
+                await Promise.all(clearResults);
+
+                return { success: true, timeUsed: Date.now() - startTime };
+            } catch (error) {
+                console.error("清理数据失败:", error);
+                return { success: false, error: error instanceof Error ? error.message : "未知错误" };
+            }
+        };
+
+        // 执行清理并发送响应
+        processDataClear().then(sendResponse);
 
         return true;
     }

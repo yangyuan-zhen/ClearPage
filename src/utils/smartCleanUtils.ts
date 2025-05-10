@@ -191,95 +191,52 @@ function extractRootDomain(domain: string): string {
 }
 
 /**
- * 获取智能清理建议 - 改进推荐算法
- * @param domain 网站域名
- * @param userHistory 用户历史清理行为 (可选)
- * @returns 推荐的清理数据类型
+ * 检查域名是否为复杂Web应用
+ * @param domain 域名
+ * @returns 是否为复杂Web应用
  */
-export function getSmartCleaningRecommendations(
-    domain: string,
-    userHistory?: { domain: string, dataTypes: DataType[] }[]
-): DataType[] {
-    // 优先检查特定网站推荐
-    if (domainSpecificRecommendations[domain]) {
-        return domainSpecificRecommendations[domain];
-    }
+const isComplexWebApp = (domain: string): boolean => {
+    // 检查域名是否包含可能表示为复杂应用的关键词
+    return /app|portal|dashboard|admin|account|system|platform/.test(domain.toLowerCase());
+};
 
-    // 尝试匹配根域名
-    const rootDomain = extractRootDomain(domain);
-    if (domainSpecificRecommendations[rootDomain]) {
-        return domainSpecificRecommendations[rootDomain];
-    }
+/**
+ * 获取智能清理建议
+ * @param domain 当前域名
+ * @returns 推荐清理的数据类型数组
+ */
+export const getSmartCleaningRecommendations = (
+    domain: string,
+): DataType[] => {
+    // 默认推荐清理的数据类型
+    const defaultRecommendations: DataType[] = ["cache", "serviceWorkers"];
 
     // 获取网站类别
     const category = getWebsiteCategory(domain);
 
-    // 获取基于类别的推荐
-    let baseRecommendations = categoryRecommendations[category] || ["cache"];
-
-    // 检查域名是否包含可能表示为复杂应用的关键词
-    const isComplexApp = /app|portal|dashboard|admin|account|system|platform/.test(domain.toLowerCase());
-
-    // 网页存储使用情况分析 (模拟实现，实际应该检测真实存储使用量)
-    // 只有当网站是复杂应用时才考虑额外的存储分析
-    if (isComplexApp) {
-        const storage: DataType[] = analyzeStorageUsage(domain);
-        if (storage.length > 0) {
-            baseRecommendations = [...new Set([...baseRecommendations, ...storage])];
-        }
+    // 根据网站类别获取推荐
+    if (category && categoryRecommendations[category]) {
+        return [...categoryRecommendations[category]];
     }
 
-    // 如果有用户历史，结合历史进行个性化推荐
-    if (userHistory && userHistory.length > 0) {
-        // 查找用户对同类网站的清理偏好
-        const similarSiteHistories = userHistory.filter(h => {
-            // 同类别或同根域名
-            return getWebsiteCategory(h.domain) === category ||
-                extractRootDomain(h.domain) === extractRootDomain(domain);
-        });
-
-        if (similarSiteHistories.length > 0) {
-            // 统计用户最常清理的数据类型
-            const typeCounts: Record<string, number> = {};
-
-            similarSiteHistories.forEach(history => {
-                history.dataTypes.forEach(type => {
-                    typeCounts[type] = (typeCounts[type] || 0) + 1;
-                });
-            });
-
-            // 找出用户偏好的数据类型 (权重分析)
-            const preferredTypes = Object.entries(typeCounts)
-                .sort((a, b) => b[1] - a[1]) // 按频率排序
-                .slice(0, 3) // 取前三个最常使用的
-                .map(([type]) => type as DataType);
-
-            if (preferredTypes.length > 0) {
-                // 合并基础推荐和用户偏好，去重
-                return [...new Set([...baseRecommendations, ...preferredTypes])];
-            }
-        }
-
-        // 检查用户最近的清理行为
-        const recentHistory = [...userHistory].sort((a, b) => {
-            // 假设历史记录中有时间戳，这里仅为示例
-            return (b as any).timestamp - (a as any).timestamp;
-        }).slice(0, 5); // 取最近5条
-
-        if (recentHistory.length > 0) {
-            // 从最近历史中提取常用数据类型
-            const recentTypes = new Set<DataType>();
-            recentHistory.forEach(h => {
-                h.dataTypes.forEach(t => recentTypes.add(t));
-            });
-
-            // 添加到推荐中
-            return [...new Set([...baseRecommendations, ...recentTypes])];
-        }
+    // 检查是否是复杂Web应用
+    if (isComplexWebApp(domain)) {
+        return [
+            ...defaultRecommendations,
+            "localStorage",
+            "indexedDB" as DataType,
+            "sessionStorage" as DataType,
+        ];
     }
 
-    return baseRecommendations;
-}
+    // 对于特定域名的特殊处理
+    if (domainSpecificRecommendations[domain]) {
+        return [...domainSpecificRecommendations[domain]];
+    }
+
+    // 返回默认推荐
+    return defaultRecommendations;
+};
 
 /**
  * 模拟分析网站存储使用情况
