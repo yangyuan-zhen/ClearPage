@@ -8,9 +8,6 @@ interface CleaningRule {
   name: string;
   domain: string;
   dataTypes: DataType[];
-  isEnabled: boolean;
-  isAutomatic: boolean;
-  frequency?: "daily" | "weekly" | "monthly";
 }
 
 // 默认清理规则
@@ -20,25 +17,18 @@ const defaultRules: CleaningRule[] = [
     name: "社交媒体网站",
     domain: "*.weibo.com,*.facebook.com,*.twitter.com",
     dataTypes: ["cache", "cookies"],
-    isEnabled: true,
-    isAutomatic: false,
   },
   {
     id: "rule2",
     name: "视频网站",
     domain: "*.bilibili.com,*.youtube.com,*.iqiyi.com",
     dataTypes: ["cache", "cookies", "sessionStorage"],
-    isEnabled: true,
-    isAutomatic: true,
-    frequency: "weekly",
   },
   {
     id: "rule3",
     name: "购物网站",
     domain: "*.taobao.com,*.jd.com,*.amazon.com",
     dataTypes: ["cache"],
-    isEnabled: true,
-    isAutomatic: false,
   },
 ];
 
@@ -94,8 +84,6 @@ const SettingsPanel: React.FC = () => {
       name: "",
       domain: "",
       dataTypes: ["cache"],
-      isEnabled: true,
-      isAutomatic: false,
     };
     setEditingRule(newRule);
     setIsEditing(true);
@@ -110,15 +98,6 @@ const SettingsPanel: React.FC = () => {
   // 删除规则
   const deleteRule = (id: string) => {
     setRules(rules.filter((rule) => rule.id !== id));
-  };
-
-  // 切换规则启用状态
-  const toggleRuleEnabled = (id: string) => {
-    setRules(
-      rules.map((rule) =>
-        rule.id === id ? { ...rule, isEnabled: !rule.isEnabled } : rule
-      )
-    );
   };
 
   // 保存编辑中的规则
@@ -236,52 +215,6 @@ const SettingsPanel: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isAutomatic"
-                checked={editingRule.isAutomatic}
-                onChange={(e) =>
-                  setEditingRule({
-                    ...editingRule,
-                    isAutomatic: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="isAutomatic"
-                className="ml-2 text-sm text-gray-700"
-              >
-                启用自动清理
-              </label>
-            </div>
-
-            {editingRule.isAutomatic && (
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  清理频率
-                </label>
-                <select
-                  value={editingRule.frequency || "weekly"}
-                  onChange={(e) =>
-                    setEditingRule({
-                      ...editingRule,
-                      frequency: e.target.value as
-                        | "daily"
-                        | "weekly"
-                        | "monthly",
-                    })
-                  }
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="daily">每天</option>
-                  <option value="weekly">每周</option>
-                  <option value="monthly">每月</option>
-                </select>
-              </div>
-            )}
-
             <div className="flex justify-end space-x-3 pt-2">
               <button
                 onClick={cancelEditing}
@@ -311,12 +244,6 @@ const SettingsPanel: React.FC = () => {
             <div key={rule.id} className="p-3 bg-white border rounded-lg">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={rule.isEnabled}
-                    onChange={() => toggleRuleEnabled(rule.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
                   <h3 className="ml-2 text-md font-medium">{rule.name}</h3>
                 </div>
                 <div className="flex space-x-2">
@@ -347,14 +274,6 @@ const SettingsPanel: React.FC = () => {
                     })
                     .join(", ")}
                 </p>
-                {rule.isAutomatic && (
-                  <p>
-                    自动清理：
-                    {rule.frequency === "daily" && "每天"}
-                    {rule.frequency === "weekly" && "每周"}
-                    {rule.frequency === "monthly" && "每月"}
-                  </p>
-                )}
               </div>
             </div>
           ))

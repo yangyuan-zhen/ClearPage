@@ -16,8 +16,6 @@ interface CleaningRule {
 // 监听安装事件
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Cache Clearer 插件已安装');
-    // 设置自动清理的定时任务
-    scheduleAutomaticCleaning();
 });
 
 // 从存储中加载清理规则
@@ -88,77 +86,6 @@ const clearDataForDomain = async (domain: string, dataTypes: DataType[]): Promis
         console.error("清理数据失败:", error);
         return false;
     }
-};
-
-// 执行自动清理
-const runAutomaticCleaning = async (): Promise<void> => {
-    const rules = await loadRules();
-    const now = Date.now();
-
-    // 筛选需要执行的规则
-    const rulesToExecute: CleaningRule[] = [];
-    const updatedRules: CleaningRule[] = [];
-
-    for (const rule of rules) {
-        let needsUpdate = false;
-        let shouldClean = false;
-
-        if (rule.isEnabled && rule.isAutomatic) {
-            const lastClean = rule.lastCleanTime || 0;
-            const hoursSinceLastClean = (now - lastClean) / (1000 * 60 * 60);
-
-            // 根据频率确定是否需要清理
-            if (rule.frequency === "daily" && hoursSinceLastClean >= 24) {
-                shouldClean = true;
-            } else if (rule.frequency === "weekly" && hoursSinceLastClean >= 168) { // 7 * 24
-                shouldClean = true;
-            } else if (rule.frequency === "monthly" && hoursSinceLastClean >= 720) { // 30 * 24
-                shouldClean = true;
-            }
-
-            if (shouldClean) {
-                rulesToExecute.push(rule);
-                rule.lastCleanTime = now;
-                needsUpdate = true;
-            }
-        }
-
-        if (needsUpdate) {
-            updatedRules.push(rule);
-        }
-    }
-
-    // 执行清理
-    for (const rule of rulesToExecute) {
-        const domainList = rule.domain.split(',').map(d => d.trim());
-        for (const domain of domainList) {
-            await clearDataForDomain(domain, rule.dataTypes);
-        }
-    }
-
-    // 更新规则的最后清理时间
-    if (updatedRules.length > 0) {
-        const newRules = rules.map(r => {
-            const updated = updatedRules.find(ur => ur.id === r.id);
-            return updated || r;
-        });
-        await saveRules(newRules);
-    }
-};
-
-// 设置定时检查自动清理规则
-const scheduleAutomaticCleaning = () => {
-    // 每小时检查一次是否有需要执行的自动清理规则
-    chrome.alarms.create('autoCleanCheck', {
-        periodInMinutes: 60
-    });
-
-    // 监听定时器事件
-    chrome.alarms.onAlarm.addListener((alarm) => {
-        if (alarm.name === 'autoCleanCheck') {
-            runAutomaticCleaning();
-        }
-    });
 };
 
 // 监听消息
