@@ -1,15 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./components/App";
-import { LanguageProvider } from "./contexts/LanguageContext";
 import "./styles/tailwind.css";
 import "./index.css";
 
+// 初始化i18n
+import "./utils/i18n";
+
 ReactDOM.render(
   <React.StrictMode>
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
+    <App />
   </React.StrictMode>,
   document.getElementById("root")
 );

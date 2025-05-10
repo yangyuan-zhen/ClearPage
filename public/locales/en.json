@@ -1,0 +1,77 @@
+{
+  "clearData": "Clear Data",
+  "performanceCheck": "Performance",
+  "settings": "Settings",
+  "aboutPlugin": "About",
+  "appTitle": "Page Cleaner",
+
+  "cleanPageDescription": "Clean browser cache and website data to improve browsing experience",
+  "performancePageDescription": "Analyze the loading performance and resource usage of the current page",
+  "settingsPageDescription": "Customize plugin behavior and cleaning rules",
+
+  "smartCleaning": "Smart Cleaning",
+  "advancedCleaning": "Advanced Cleaning",
+
+  "smart_recommendation": "Smart Recommendation",
+  "hide": "Hide",
+  "show": "Show",
+  "recommended_data_types": "Recommended Data Types",
+  "recommendation_applied": "Applied",
+  "apply_recommendation": "Apply Recommendation",
+
+  "cleaning_data_for": "Cleaning data for:",
+  "clearWithSmart": "Smart Clean",
+  "startCleaning": "Start Cleaning",
+  "cleaning": "Cleaning...",
+  "clearAgain": "Clean Again",
+  "cleaning_complete": "Cleaning Complete",
+  "selected_data_cleared": "Selected data types have been cleared",
+  "time_taken": "Time taken",
+  "sensitive_data_warning": "You've selected types that contain sensitive data. You may need to log in again after cleaning.",
+
+  "cache": "Cache",
+  "cacheDescription": "Temporary stored page resources and files",
+  "cookies": "Cookies",
+  "cookiesDescription": "User identification and preference data stored by websites",
+  "localStorage": "Local Storage",
+  "localStorageDescription": "Permanently stored website data",
+  "sessionStorage": "Session Storage",
+  "sessionStorageDescription": "Temporary session data, cleared after closing the tab",
+  "indexedDB": "IndexedDB",
+  "indexedDBDescription": "Structured data storage",
+  "formData": "Form Data",
+  "formDataDescription": "Saved form data",
+  "fileSystem": "File System",
+  "fileSystemDescription": "Files saved by websites",
+
+  "current_page": "Current Page",
+  "loading": "Loading...",
+  "error": "Error",
+  "try_again": "Try Again",
+  "no_data": "No performance data available",
+  "loading_performance": "Loading performance data...",
+  "special_page_notice": "Special Page Notice",
+  "special_page_message": "This is a browser built-in page or extension page. Real performance data cannot be retrieved. The displayed data is simulated.",
+
+  "overall_score": "Overall Score",
+  "loading_time": "Loading Time",
+  "resource_count": "Resource Count",
+  "resource_size": "Resource Size",
+  "resource_analysis": "Resource Analysis",
+  "images": "Images",
+  "dom_elements": "DOM Elements",
+  "run_test": "Run Test",
+
+  "light_weight": "Light Weight",
+  "heavy": "Heavy",
+  "already_cached": "Already Cached",
+
+  "优秀": "Excellent",
+  "良好": "Good",
+  "一般": "Average",
+  "较差": "Poor",
+
+  "troubleshooting_tips": "Troubleshooting tips: Try refreshing the page before testing, or wait until the page is fully loaded before trying again.",
+
+  "version": "Version"
+}

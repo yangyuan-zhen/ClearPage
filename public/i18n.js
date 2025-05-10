@@ -45,6 +45,7 @@
 
             // 2. 从内置翻译表中获取
             const translations = {
+                // 导航和标题
                 "clearData": {
                     "zh-CN": "清理数据",
                     "en": "Clear Data"
@@ -64,6 +65,128 @@
                 "aboutPlugin": {
                     "zh-CN": "关于插件",
                     "en": "About"
+                },
+
+                // 页面描述
+                "cleanPageDescription": {
+                    "zh-CN": "清理浏览器缓存和网站数据，提高浏览体验",
+                    "en": "Clean browser cache and website data to improve browsing experience"
+                },
+                "performancePageDescription": {
+                    "zh-CN": "分析当前页面的加载性能和资源使用情况",
+                    "en": "Analyze current page loading performance and resource usage"
+                },
+                "settingsPageDescription": {
+                    "zh-CN": "自定义插件的行为和清理规则",
+                    "en": "Customize plugin behavior and cleaning rules"
+                },
+
+                // CacheClearButton组件
+                "cache": {
+                    "zh-CN": "缓存",
+                    "en": "Cache"
+                },
+                "cacheDescription": {
+                    "zh-CN": "临时存储的页面资源和文件",
+                    "en": "Temporary stored page resources and files"
+                },
+                "cookies": {
+                    "zh-CN": "Cookies",
+                    "en": "Cookies"
+                },
+                "cookiesDescription": {
+                    "zh-CN": "网站存储的用户识别和偏好数据",
+                    "en": "User identification and preference data stored by websites"
+                },
+                "localStorage": {
+                    "zh-CN": "本地存储",
+                    "en": "Local Storage"
+                },
+                "localStorageDescription": {
+                    "zh-CN": "永久存储的网站数据",
+                    "en": "Permanently stored website data"
+                },
+                "sessionStorage": {
+                    "zh-CN": "会话存储",
+                    "en": "Session Storage"
+                },
+                "sessionStorageDescription": {
+                    "zh-CN": "临时会话数据，关闭标签页后清除",
+                    "en": "Temporary session data, cleared after closing the tab"
+                },
+                "indexedDB": {
+                    "zh-CN": "IndexedDB",
+                    "en": "IndexedDB"
+                },
+                "indexedDBDescription": {
+                    "zh-CN": "结构化数据存储",
+                    "en": "Structured data storage"
+                },
+                "webSQL": {
+                    "zh-CN": "WebSQL",
+                    "en": "WebSQL"
+                },
+                "webSQLDescription": {
+                    "zh-CN": "旧版网站使用的数据库存储",
+                    "en": "Database storage used by legacy websites"
+                },
+                "formData": {
+                    "zh-CN": "表单数据",
+                    "en": "Form Data"
+                },
+                "formDataDescription": {
+                    "zh-CN": "保存的表单数据",
+                    "en": "Saved form data"
+                },
+                "fileSystem": {
+                    "zh-CN": "文件系统",
+                    "en": "File System"
+                },
+                "fileSystemDescription": {
+                    "zh-CN": "网站保存的文件",
+                    "en": "Files saved by websites"
+                },
+                "smartCleaning": {
+                    "zh-CN": "智能清理",
+                    "en": "Smart Cleaning"
+                },
+                "advancedCleaning": {
+                    "zh-CN": "高级清理",
+                    "en": "Advanced Cleaning"
+                },
+                "cleaning": {
+                    "zh-CN": "正在清理...",
+                    "en": "Cleaning..."
+                },
+                "clearAgain": {
+                    "zh-CN": "再次清理",
+                    "en": "Clean Again"
+                },
+                "clearWithSmart": {
+                    "zh-CN": "智能清理",
+                    "en": "Smart Clean"
+                },
+                "startCleaning": {
+                    "zh-CN": "开始清理",
+                    "en": "Start Cleaning"
+                },
+
+                // Performance Panel
+                "runCheck": {
+                    "zh-CN": "运行检测",
+                    "en": "Run Check"
+                },
+                "metrics": {
+                    "zh-CN": "指标",
+                    "en": "Metrics"
+                },
+                "recommendations": {
+                    "zh-CN": "建议",
+                    "en": "Recommendations"
+                },
+                "resources": {
+                    "zh-CN": "资源",
+                    "en": "Resources"
                 }
             };
 

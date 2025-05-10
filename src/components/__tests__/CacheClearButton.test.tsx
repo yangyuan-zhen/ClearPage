@@ -3,6 +3,69 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import CacheClearButton from "../CacheClearButton";
 import { clearDomainCache } from "../../utils/cacheUtils";
 
+// 模拟fetch API如果在测试环境中不可用
+if (typeof global.fetch !== "function") {
+  global.fetch = jest.fn().mockImplementation((url) => {
+    if (url.includes("zh_CN.json")) {
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            clearCache: "清除缓存",
+            dataTypes: "数据类型",
+            cache: "缓存",
+            cookie: "Cookie",
+            localStorage: "本地存储",
+            success: "成功清除{domain}的缓存",
+            clearing: "正在清除...",
+            clear: "清除",
+            currentDomain: "当前域名: {domain}",
+          }),
+      });
+    } else if (url.includes("en.json")) {
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            clearCache: "Clear Cache",
+            dataTypes: "Data Types",
+            cache: "Cache",
+            cookie: "Cookie",
+            localStorage: "Local Storage",
+            success: "Successfully cleared cache for {domain}",
+            clearing: "Clearing...",
+            clear: "Clear",
+            currentDomain: "Current domain: {domain}",
+          }),
+      });
+    }
+    return Promise.reject(new Error("Not found"));
+  });
+}
+
+// 模拟chrome API
+if (!global.chrome) {
+  global.chrome = {
+    runtime: {
+      getURL: jest.fn(
+        (path) => `chrome-extension://abcdefghijklmnopqrstuvwxyz/${path}`
+      ),
+      sendMessage: jest.fn(),
+      connect: jest.fn(),
+      onMessage: {
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        hasListener: jest.fn(),
+        hasListeners: jest.fn(),
+        dispatch: jest.fn(),
+      },
+    },
+    tabs: {
+      query: jest.fn(),
+    },
+  } as unknown as typeof chrome;
+}
+
 jest.mock("../../utils/cacheUtils");
 
 describe("CacheClearButton", () => {
@@ -14,6 +77,19 @@ describe("CacheClearButton", () => {
     (chrome.tabs.query as jest.Mock).mockImplementation(() =>
       Promise.resolve([{ url: "https://example.com/page" }])
     );
+
+    // Mock localStorage
+    Object.defineProperty(window, "localStorage", {
+      value: {
+        getItem: jest.fn(() => "zh_CN"),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+        length: 1,
+        key: jest.fn(),
+      },
+      writable: true,
+    });
   });
 
   it("显示当前域名", async () => {

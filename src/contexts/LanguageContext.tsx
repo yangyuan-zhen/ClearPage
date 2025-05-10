@@ -6,9 +6,13 @@ import React, {
   ReactNode,
 } from "react";
 
-// 翻译表
-export const translations: { [key: string]: { [lang: string]: string } } = {
-  // 导航和标题
+// 创建统一的翻译表
+const translations: {
+  [key: string]: {
+    [lang: string]: string;
+  };
+} = {
+  // 导航相关
   clearData: {
     "zh-CN": "清理数据",
     en: "Clear Data",
@@ -21,45 +25,83 @@ export const translations: { [key: string]: { [lang: string]: string } } = {
     "zh-CN": "设置",
     en: "Settings",
   },
-  appTitle: {
-    "zh-CN": "网页清理工具",
-    en: "ClearPage",
-  },
   aboutPlugin: {
     "zh-CN": "关于插件",
     en: "About",
   },
+  appTitle: {
+    "zh-CN": "网页清理工具",
+    en: "Page Cleaner",
+  },
 
-  // 页面描述
+  // 清理模式
+  smartCleaning: {
+    "zh-CN": "智能清理",
+    en: "Smart Cleaning",
+  },
+  advancedCleaning: {
+    "zh-CN": "高级清理",
+    en: "Advanced Cleaning",
+  },
+
+  // 描述文本
   cleanPageDescription: {
     "zh-CN": "清理浏览器缓存和网站数据，提高浏览体验",
     en: "Clean browser cache and website data to improve browsing experience",
   },
   performancePageDescription: {
     "zh-CN": "分析当前页面的加载性能和资源使用情况",
-    en: "Analyze current page loading performance and resource usage",
+    en: "Analyze the loading performance and resource usage of the current page",
   },
   settingsPageDescription: {
     "zh-CN": "自定义插件的行为和清理规则",
     en: "Customize plugin behavior and cleaning rules",
   },
 
-  // CacheClearButton组件
-  clearCache: {
-    "zh-CN": "清除缓存",
-    en: "Clear Cache",
+  // 智能清理面板
+  smart_recommendation: {
+    "zh-CN": "智能推荐",
+    en: "Smart Recommendation",
   },
-  clearingCache: {
-    "zh-CN": "正在清除...",
-    en: "Clearing...",
+  hide: {
+    "zh-CN": "隐藏",
+    en: "Hide",
   },
-  cacheCleared: {
-    "zh-CN": "缓存已清除",
-    en: "Cache Cleared",
+  show: {
+    "zh-CN": "显示",
+    en: "Show",
   },
-  selectDataTypes: {
-    "zh-CN": "选择要清除的数据类型",
-    en: "Select Data Types to Clear",
+  recommended_data_types: {
+    "zh-CN": "建议清理的数据类型",
+    en: "Recommended Data Types",
+  },
+  recommendation_applied: {
+    "zh-CN": "已应用",
+    en: "Applied",
+  },
+  apply_recommendation: {
+    "zh-CN": "应用建议",
+    en: "Apply Recommendation",
+  },
+
+  // 高级清理面板
+  select_data_types: {
+    "zh-CN": "选择要清理的数据类型",
+    en: "Select Data Types to Clean",
+  },
+  select_basic: {
+    "zh-CN": "选择基本项",
+    en: "Select Basic",
+  },
+  select_all: {
+    "zh-CN": "全选",
+    en: "Select All",
+  },
+
+  // 数据类型
+  cache: {
+    "zh-CN": "缓存",
+    en: "Cache",
   },
   cookies: {
     "zh-CN": "Cookies",
@@ -73,146 +115,96 @@ export const translations: { [key: string]: { [lang: string]: string } } = {
     "zh-CN": "会话存储",
     en: "Session Storage",
   },
-  imageCache: {
-    "zh-CN": "图片缓存",
-    en: "Image Cache",
+  indexedDB: {
+    "zh-CN": "IndexedDB",
+    en: "IndexedDB",
   },
-  clearSelected: {
-    "zh-CN": "清除选中项",
-    en: "Clear Selected",
+  webSQL: {
+    "zh-CN": "WebSQL",
+    en: "WebSQL",
   },
-  clearAll: {
-    "zh-CN": "清除全部",
-    en: "Clear All",
+  formData: {
+    "zh-CN": "表单数据",
+    en: "Form Data",
   },
-
-  // PerformancePanel组件
-  runCheck: {
-    "zh-CN": "运行检测",
-    en: "Run Check",
-  },
-  analyzing: {
-    "zh-CN": "分析中...",
-    en: "Analyzing...",
-  },
-  overallScore: {
-    "zh-CN": "总体评分",
-    en: "Overall Score",
-  },
-  loadTime: {
-    "zh-CN": "加载时间",
-    en: "Load Time",
-  },
-  resourceCount: {
-    "zh-CN": "资源数量",
-    en: "Resource Count",
-  },
-  resourceSize: {
-    "zh-CN": "资源大小",
-    en: "Resource Size",
-  },
-  metrics: {
-    "zh-CN": "指标",
-    en: "Metrics",
-  },
-  recommendations: {
-    "zh-CN": "建议",
-    en: "Recommendations",
-  },
-  resources: {
-    "zh-CN": "资源",
-    en: "Resources",
-  },
-  javascript: {
-    "zh-CN": "JavaScript",
-    en: "JavaScript",
-  },
-  css: {
-    "zh-CN": "CSS",
-    en: "CSS",
-  },
-  images: {
-    "zh-CN": "图片",
-    en: "Images",
-  },
-  other: {
-    "zh-CN": "其他",
-    en: "Other",
+  fileSystem: {
+    "zh-CN": "文件系统",
+    en: "File System",
   },
 
-  // SettingsPanel组件
-  dataTypes: {
-    "zh-CN": "数据类型",
-    en: "Data Types",
+  // 数据类型描述
+  cacheDescription: {
+    "zh-CN": "临时存储的页面资源和文件",
+    en: "Temporarily stored page resources and files",
   },
-  rules: {
-    "zh-CN": "规则",
-    en: "Rules",
+  cookiesDescription: {
+    "zh-CN": "网站存储的用户识别和偏好数据",
+    en: "User identification and preference data stored by websites",
   },
-  preferences: {
-    "zh-CN": "首选项",
-    en: "Preferences",
+  localStorageDescription: {
+    "zh-CN": "永久存储的网站数据",
+    en: "Permanently stored website data",
   },
-  about: {
-    "zh-CN": "关于",
-    en: "About",
+  sessionStorageDescription: {
+    "zh-CN": "临时会话数据，关闭标签页后清除",
+    en: "Temporary session data, cleared after closing the tab",
   },
-  addRule: {
-    "zh-CN": "添加规则",
-    en: "Add Rule",
+  indexedDBDescription: {
+    "zh-CN": "结构化数据存储",
+    en: "Structured data storage",
   },
-  domain: {
-    "zh-CN": "域名",
-    en: "Domain",
+  webSQLDescription: {
+    "zh-CN": "旧版网站使用的数据库存储",
+    en: "Database storage used by legacy websites",
   },
-  dataType: {
-    "zh-CN": "数据类型",
-    en: "Data Type",
+  formDataDescription: {
+    "zh-CN": "保存的表单数据",
+    en: "Saved form data",
   },
-  action: {
-    "zh-CN": "操作",
-    en: "Action",
+  fileSystemDescription: {
+    "zh-CN": "网站保存的文件",
+    en: "Files saved by websites",
   },
-  save: {
-    "zh-CN": "保存",
-    en: "Save",
+
+  // 清理状态和按钮
+  cleaning_data_for: {
+    "zh-CN": "正在清理数据：",
+    en: "Cleaning data for:",
   },
-  cancel: {
-    "zh-CN": "取消",
-    en: "Cancel",
+  clearWithSmart: {
+    "zh-CN": "智能清理",
+    en: "Smart Clean",
   },
-  delete: {
-    "zh-CN": "删除",
-    en: "Delete",
+  startCleaning: {
+    "zh-CN": "开始清理",
+    en: "Start Cleaning",
   },
-  edit: {
-    "zh-CN": "编辑",
-    en: "Edit",
+  cleaning: {
+    "zh-CN": "正在清理...",
+    en: "Cleaning...",
   },
-  reset: {
-    "zh-CN": "重置",
-    en: "Reset",
+  clearAgain: {
+    "zh-CN": "再次清理",
+    en: "Clean Again",
   },
-  export: {
-    "zh-CN": "导出",
-    en: "Export",
+  cleaning_complete: {
+    "zh-CN": "清理完成",
+    en: "Cleaning Complete",
   },
-  import: {
-    "zh-CN": "导入",
-    en: "Import",
+  selected_data_cleared: {
+    "zh-CN": "已清理所选数据类型",
+    en: "Selected data types have been cleared",
   },
-  automaticCleanup: {
-    "zh-CN": "自动清理",
-    en: "Automatic Cleanup",
+  time_taken: {
+    "zh-CN": "耗时",
+    en: "Time taken",
   },
-  notificationsEnabled: {
-    "zh-CN": "启用通知",
-    en: "Enable Notifications",
+  sensitive_data_warning: {
+    "zh-CN": "您选择了包含敏感数据的类型。清理后可能需要重新登录此网站。",
+    en: "You've selected types that contain sensitive data. You may need to log in again after cleaning.",
   },
-  cleanupInterval: {
-    "zh-CN": "清理间隔",
-    en: "Cleanup Interval",
-  },
+
+  // 之前已有的翻译项
   version: {
     "zh-CN": "版本",
     en: "Version",
@@ -258,6 +250,52 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       localStorage.setItem("clearpage_language", lang);
     }
   }, []);
+
+  // 向window对象注册updateReactLanguage函数
+  useEffect(() => {
+    // 定义全局更新函数，允许从外部更新React组件的语言
+    window.updateReactLanguage = (lang: string) => {
+      console.log(`从全局调用更新React语言: ${lang}`);
+      setCurrentLang(lang);
+
+      // 触发一个自定义事件，通知应用其他部分语言已更改
+      const event = new CustomEvent("appLanguageChanged", { detail: { lang } });
+      document.dispatchEvent(event);
+    };
+
+    return () => {
+      // 清理函数
+      delete window.updateReactLanguage;
+    };
+  }, []);
+
+  // 监听从外部触发的语言变化事件
+  useEffect(() => {
+    const handleLanguageChanged = (event: CustomEvent) => {
+      if (
+        event.detail &&
+        event.detail.lang &&
+        event.detail.lang !== currentLang
+      ) {
+        console.log(`接收到语言变化事件: ${event.detail.lang}`);
+        setCurrentLang(event.detail.lang);
+      }
+    };
+
+    // 添加事件监听器
+    document.addEventListener(
+      "languageChanged",
+      handleLanguageChanged as EventListener
+    );
+
+    // 清理函数
+    return () => {
+      document.removeEventListener(
+        "languageChanged",
+        handleLanguageChanged as EventListener
+      );
+    };
+  }, [currentLang]);
 
   // 监听语言变化，更新文档属性
   useEffect(() => {
@@ -324,6 +362,23 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
     setTimeout(() => {
       document.body.removeChild(notification);
     }, 3000);
+
+    // 触发一个自定义事件，通知应用其他部分语言已更改
+    const event = new CustomEvent("appLanguageChanged", { detail: { lang } });
+    document.dispatchEvent(event);
+
+    // 如果window.updateReactLanguage存在（全局传递语言更新的函数），则调用它
+    if (window.updateReactLanguage) {
+      window.updateReactLanguage(lang);
+    }
+
+    // 兼容旧的window.i18n机制
+    if (window.i18n && window.i18n.switchLanguage) {
+      window.i18n.switchLanguage(lang);
+    }
+
+    // 强制页面元素刷新，确保所有组件感知到语言变化
+    console.log(`语言已切换为: ${lang}`);
   };
 
   return (
@@ -353,5 +408,7 @@ declare global {
       getMessage: (messageId: string, fallback?: string) => string;
       getCurrentLanguage: () => string;
     };
+    // 添加用于React和原生JS通信的函数
+    updateReactLanguage?: (lang: string) => void;
   }
 }

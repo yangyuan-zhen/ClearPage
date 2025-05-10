@@ -11,12 +11,16 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "chart.js": "^4.4.9",
+    "framer-motion": "^12.10.5",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
+    "@testing-library/react-hooks": "^8.0.1",
     "@types/chrome": "^0.0.235",
     "@types/jest": "^29.5.0",
     "@types/react": "^18.0.28",

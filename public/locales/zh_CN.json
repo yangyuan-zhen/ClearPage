@@ -1,0 +1,77 @@
+{
+  "clearData": "清理数据",
+  "performanceCheck": "性能检测",
+  "settings": "设置",
+  "aboutPlugin": "关于插件",
+  "appTitle": "网页清理工具",
+
+  "cleanPageDescription": "清理浏览器缓存和网站数据，提高浏览体验",
+  "performancePageDescription": "分析当前页面的加载性能和资源使用情况",
+  "settingsPageDescription": "自定义插件的行为和清理规则",
+
+  "smartCleaning": "智能清理",
+  "advancedCleaning": "高级清理",
+
+  "smart_recommendation": "智能推荐",
+  "hide": "隐藏",
+  "show": "显示",
+  "recommended_data_types": "建议清理的数据类型",
+  "recommendation_applied": "已应用",
+  "apply_recommendation": "应用建议",
+
+  "cleaning_data_for": "正在清理数据：",
+  "clearWithSmart": "智能清理",
+  "startCleaning": "开始清理",
+  "cleaning": "正在清理...",
+  "clearAgain": "再次清理",
+  "cleaning_complete": "清理完成",
+  "selected_data_cleared": "已清理所选数据类型",
+  "time_taken": "耗时",
+  "sensitive_data_warning": "您选择了包含敏感数据的类型。清理后可能需要重新登录此网站。",
+
+  "cache": "缓存",
+  "cacheDescription": "临时存储的页面资源和文件",
+  "cookies": "Cookies",
+  "cookiesDescription": "网站存储的用户识别和偏好数据",
+  "localStorage": "本地存储",
+  "localStorageDescription": "永久存储的网站数据",
+  "sessionStorage": "会话存储",
+  "sessionStorageDescription": "临时会话数据，关闭标签页后清除",
+  "indexedDB": "IndexedDB",
+  "indexedDBDescription": "结构化数据存储",
+  "formData": "表单数据",
+  "formDataDescription": "保存的表单数据",
+  "fileSystem": "文件系统",
+  "fileSystemDescription": "网站保存的文件",
+
+  "current_page": "当前页面",
+  "loading": "加载中...",
+  "error": "错误",
+  "try_again": "重试",
+  "no_data": "暂无性能数据",
+  "loading_performance": "加载性能数据中...",
+  "special_page_notice": "特殊页面提示",
+  "special_page_message": "当前页面是浏览器内置页面或扩展页面，无法获取真实性能数据。显示的数据为模拟值。",
+
+  "overall_score": "总体评分",
+  "loading_time": "加载时间",
+  "resource_count": "资源数量",
+  "resource_size": "资源大小",
+  "resource_analysis": "资源分析",
+  "images": "图片",
+  "dom_elements": "DOM元素",
+  "run_test": "运行检测",
+
+  "light_weight": "轻量",
+  "heavy": "较重",
+  "already_cached": "已缓存",
+
+  "优秀": "优秀",
+  "良好": "良好",
+  "一般": "一般",
+  "较差": "较差",
+
+  "troubleshooting_tips": "故障排除提示: 尝试刷新页面后再检测，或者在页面完全加载后再尝试。",
+
+  "version": "版本"
+}

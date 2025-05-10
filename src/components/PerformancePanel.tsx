@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { getPagePerformance } from "../utils/performanceUtils";
 import type { PagePerformance } from "../utils/performanceUtils";
-import { getMessage } from "../utils/i18n";
-import { useLanguage } from "../contexts/LanguageContext";
+import {
+  bytesToSize,
+  formatNumber,
+  formatTimeInMs,
+} from "../utils/formatUtils";
+import { useI18n } from "../utils/i18n";
+import { motion } from "framer-motion";
+
+// 导入性能组件
+import ScoreCard from "./performance/ScoreCard";
+import ResourceChart from "./performance/ResourceChart";
+import MetricCard from "./performance/MetricCard";
+
+// 修改METRICS_CONFIG以支持字符串索引
+type MetricConfig = {
+  color: string;
+  colorLight: string;
+  label: string;
+};
 
 // 性能指标类型及对应的颜色配置
-const METRICS_CONFIG = {
+const METRICS_CONFIG: Record<string, MetricConfig> = {
   dnsTime: { color: "bg-blue-500", colorLight: "bg-blue-100", label: "DNS" },
   tcpTime: {
     color: "bg-emerald-500",
@@ -47,31 +64,11 @@ const METRICS_CONFIG = {
 
 // 性能评级标准
 const PERFORMANCE_GRADES = {
-  A: {
-    min: 90,
-    color: "text-green-600",
-    bg: "bg-green-100",
-    description: "优秀",
-  },
-  B: {
-    min: 75,
-    color: "text-blue-600",
-    bg: "bg-blue-100",
-    description: "良好",
-  },
-  C: {
-    min: 60,
-    color: "text-yellow-600",
-    bg: "bg-yellow-100",
-    description: "一般",
-  },
-  D: {
-    min: 40,
-    color: "text-orange-600",
-    bg: "bg-orange-100",
-    description: "较差",
-  },
-  F: { min: 0, color: "text-red-600", bg: "bg-red-100", description: "糟糕" },
+  A: { min: 90, color: "text-green-600 bg-green-100" },
+  B: { min: 75, color: "text-teal-600 bg-teal-100" },
+  C: { min: 60, color: "text-yellow-600 bg-yellow-100" },
+  D: { min: 40, color: "text-orange-600 bg-orange-100" },
+  F: { min: 0, color: "text-red-600 bg-red-100" },
 };
 
 // 性能优化建议
@@ -89,21 +86,12 @@ const getPerformanceRecommendations = (
   }[] = [];
 
   // 根据加载时间提供建议
-  if (performance.loadTime > 3000) {
+  if (performance.timing > 3000) {
     recommendations.push({
       title: "页面加载时间过长",
       description:
         "考虑减少资源大小，使用懒加载技术，或者启用浏览器缓存来提高页面加载速度。",
       importance: "high" as const,
-    });
-  }
-
-  // 根据DNS查询时间提供建议
-  if (performance.dnsTime > 200) {
-    recommendations.push({
-      title: "DNS解析时间较长",
-      description: "考虑使用DNS预获取或更换更快的DNS服务器来减少DNS查询时间。",
-      importance: "medium" as const,
     });
   }
 
@@ -118,7 +106,8 @@ const getPerformanceRecommendations = (
   }
 
   // 根据资源大小提供建议
-  if (performance.resourceSize > 3000) {
+  if (performance.resourceSize > 3000000) {
+    // 转换为字节
     recommendations.push({
       title: "资源体积过大",
       description:
@@ -127,53 +116,40 @@ const getPerformanceRecommendations = (
     });
   }
 
-  // 根据DOM解析时间提供建议
-  if (performance.domTime > 1000) {
+  // 根据DOM元素数量提供建议
+  if (performance.domElements > 1000) {
     recommendations.push({
-      title: "DOM解析时间较长",
+      title: "DOM元素过多",
       description:
         "减少DOM元素数量，避免复杂的CSS选择器，优化JavaScript执行顺序。",
       importance: "medium" as const,
     });
   }
 
-  // 根据JS执行时间提供建议
-  if (performance.jsExecutionTime > 1000) {
+  // 根据JS资源大小提供建议
+  if (performance.jsSize > 500000) {
     recommendations.push({
-      title: "JavaScript执行时间过长",
+      title: "JavaScript资源过大",
       description:
         "优化JavaScript代码，考虑代码分割、延迟加载非关键脚本，减少主线程阻塞。",
       importance: "high" as const,
     });
   }
 
-  // 根据CSS解析时间提供建议
-  if (performance.cssParsingTime > 500) {
+  // 根据CSS资源大小提供建议
+  if (performance.cssSize > 200000) {
     recommendations.push({
-      title: "CSS解析时间较长",
+      title: "CSS资源过大",
       description:
         "简化CSS选择器，移除未使用的样式，考虑关键CSS内联和非关键CSS异步加载。",
       importance: "medium" as const,
     });
   }
 
-  // 根据LCP提供建议
-  if (performance.largestContentfulPaint > 2500) {
-    recommendations.push({
-      title: "最大内容绘制(LCP)时间过长",
-      description:
-        "优化关键渲染路径，确保主要内容快速加载，考虑使用图片懒加载和优化服务器响应时间。",
-      importance: "high" as const,
-    });
-  }
-
   // 根据缓存使用情况提供建议
-  if (
-    performance.networkResourceCount > 30 &&
-    performance.cachedResourceCount < 10
-  ) {
+  if (performance.resourceSize > 1000000) {
     recommendations.push({
-      title: "缓存利用率低",
+      title: "缓存优化建议",
       description:
         "配置适当的缓存策略，为静态资源设置合理的缓存头，利用Service Worker实现离线缓存。",
       importance: "medium" as const,
@@ -195,25 +171,22 @@ const getPerformanceRecommendations = (
 // 计算性能评分
 const calculatePerformanceScore = (performance: PagePerformance): number => {
   // 基于各项指标计算总体评分，满分100分
-  const loadTimeScore = Math.max(0, 100 - performance.loadTime / 50); // 加载时间越短分数越高
+  const loadTimeScore = Math.max(0, 100 - performance.timing / 50); // 加载时间越短分数越高
   const resourceCountScore = Math.max(0, 100 - performance.resourceCount * 0.5); // 资源数量越少分数越高
-  const resourceSizeScore = Math.max(0, 100 - performance.resourceSize / 50); // 资源体积越小分数越高
-  const dnsTimeScore = Math.max(0, 100 - performance.dnsTime * 0.5); // DNS解析时间越短分数越高
-  const tcpTimeScore = Math.max(0, 100 - performance.tcpTime * 0.5); // TCP连接时间越短分数越高
-  const requestTimeScore = Math.max(0, 100 - performance.requestTime * 0.3); // 请求响应时间越短分数越高
-  const domTimeScore = Math.max(0, 100 - performance.domTime * 0.2); // DOM解析时间越短分数越高
-  const lcpScore = Math.max(0, 100 - performance.largestContentfulPaint / 25); // LCP时间越短分数越高
+  const resourceSizeScore = Math.max(0, 100 - performance.resourceSize / 50000); // 资源体积越小分数越高
+
+  const domElementsScore = Math.max(0, 100 - performance.domElements / 100); // DOM元素越少分数越高
+  const jsSizeScore = Math.max(0, 100 - performance.jsSize / 100000); // JS大小越小分数越高
+  const cssSizeScore = Math.max(0, 100 - performance.cssSize / 50000); // CSS大小越小分数越高
 
   // 综合各指标，权重可根据实际情况调整
   const finalScore =
-    loadTimeScore * 0.2 +
+    loadTimeScore * 0.3 +
     resourceCountScore * 0.15 +
     resourceSizeScore * 0.15 +
-    dnsTimeScore * 0.1 +
-    tcpTimeScore * 0.1 +
-    requestTimeScore * 0.1 +
-    domTimeScore * 0.1 +
-    lcpScore * 0.1;
+    domElementsScore * 0.15 +
+    jsSizeScore * 0.15 +
+    cssSizeScore * 0.1;
 
   return Math.round(finalScore);
 };
@@ -228,694 +201,424 @@ const getPerformanceGrade = (
   return "F";
 };
 
-const formatNumber = (num: number): string => {
-  if (num < 0.1) return "<0.1";
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
-  return num.toFixed(1);
+// 获取性能评级
+const getPerformanceRating = (score: number): string => {
+  if (score >= 90) return "优秀";
+  if (score >= 70) return "良好";
+  if (score >= 50) return "一般";
+  return "较差";
+};
+
+// 获取加载时间评级
+const getLoadingTimeRating = (time: number): string => {
+  if (time < 2000) return "优秀";
+  if (time < 4000) return "良好";
+  if (time < 6000) return "一般";
+  return "较差";
+};
+
+// 异步清理函数
+const performAsyncCleanup = (callback: () => void) => {
+  // 使用requestIdleCallback或setTimeout实现异步处理
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(() => callback());
+  } else {
+    setTimeout(callback, 1);
+  }
 };
 
 const PerformancePanel: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, currentLang } = useI18n();
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
   const [performance, setPerformance] = useState<PagePerformance | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUrl, setCurrentUrl] = useState<string>("");
-  const [activeView, setActiveView] = useState<
-    "metrics" | "recommendations" | "resources"
-  >("metrics");
-  const [showAdvancedMetrics, setShowAdvancedMetrics] =
-    useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isSpecialPage, setIsSpecialPage] = useState(false);
 
-  const runPerformanceCheck = async () => {
+  const fetchPerformance = async (forceRetry = false) => {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
+      // 如果是强制重试，增加重试计数
+      if (forceRetry) {
+        setRetryCount((prev) => prev + 1);
+      }
 
-      // 获取当前标签页的URL
       const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
 
-      if (tab?.url) {
-        setCurrentUrl(tab.url);
+      if (!tab?.url) {
+        throw new Error(
+          currentLang === "zh_CN"
+            ? "无法获取当前页面信息"
+            : "Could not get current page information"
+        );
       }
 
-      // 获取性能数据
-      const perfData = await getPagePerformance();
-      setPerformance(perfData);
+      setCurrentUrl(tab.url);
+
+      // 检查特殊页面
+      if (
+        tab.url.startsWith("chrome://") ||
+        tab.url.startsWith("chrome-extension://") ||
+        tab.url.startsWith("edge://") ||
+        tab.url.startsWith("about:") ||
+        tab.url.startsWith("file://")
+      ) {
+        setIsSpecialPage(true);
+      }
+
+      const performanceData = await getPagePerformance(tab.id as number);
+
+      // 利用异步清理来防止UI阻塞
+      performAsyncCleanup(() => {
+        if (performanceData) {
+          setPerformance(performanceData);
+          setIsLoading(false);
+        } else {
+          throw new Error(
+            currentLang === "zh_CN"
+              ? "无法获取性能数据，请刷新页面重试"
+              : "Could not get performance data. Please refresh the page and try again"
+          );
+        }
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "未知错误");
-    } finally {
-      setLoading(false);
+      console.error("Performance fetch error:", err);
+
+      let errorMessage =
+        err instanceof Error
+          ? err.message
+          : currentLang === "zh_CN"
+          ? "获取性能数据时出错"
+          : "Error fetching performance data";
+
+      // 根据重试次数提供不同的错误提示
+      if (retryCount >= 2) {
+        errorMessage =
+          currentLang === "zh_CN"
+            ? "多次尝试获取性能数据失败。请确保您浏览的是标准网页，并且已授予扩展程序必要的权限。"
+            : "Multiple attempts to retrieve performance data have failed. Please ensure you are browsing a standard webpage and have granted the extension necessary permissions.";
+      }
+
+      setError(errorMessage);
+      setIsLoading(false);
     }
   };
 
-  const score = performance ? calculatePerformanceScore(performance) : 0;
-  const grade = performance ? getPerformanceGrade(score) : "F";
-  const recommendations = performance
-    ? getPerformanceRecommendations(performance)
-    : [];
-
-  // 在组件加载后自动运行检查
   useEffect(() => {
-    runPerformanceCheck();
+    fetchPerformance();
   }, []);
 
-  const getImportanceClass = (importance: string) => {
-    switch (importance) {
-      case "high":
-        return "bg-red-50 border-red-200 text-red-700";
-      case "medium":
-        return "bg-yellow-50 border-yellow-200 text-yellow-700";
-      default:
-        return "bg-blue-50 border-blue-200 text-blue-700";
-    }
+  // 确定资源数量状态
+  const getResourceCountStatus = (
+    count: number
+  ): "good" | "medium" | "poor" => {
+    if (count < 20) return "good";
+    if (count < 50) return "medium";
+    return "poor";
   };
 
-  const formatSizeInKB = (sizeInBytes: number): string => {
-    return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+  // 确定资源大小状态
+  const getResourceSizeStatus = (size: number): "good" | "medium" | "poor" => {
+    if (size < 500000) return "good"; // 500KB
+    if (size < 2000000) return "medium"; // 2MB
+    return "poor";
   };
 
-  const getScoreColor = (score: number): string => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 75) return "text-blue-600";
-    if (score >= 60) return "text-yellow-600";
-    if (score >= 40) return "text-orange-600";
-    return "text-red-600";
+  // 确定缓存命中率状态
+  const getCacheHitRateStatus = (rate: number): "good" | "medium" | "poor" => {
+    if (rate > 70) return "good";
+    if (rate > 40) return "medium";
+    return "poor";
+  };
+
+  // 确定内存使用状态
+  const getMemoryUsageStatus = (memory: number): "good" | "medium" | "poor" => {
+    if (memory < 30) return "good";
+    if (memory < 60) return "medium";
+    return "poor";
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面上下文信息 */}
-      <div className="bg-blue-50 text-blue-800 rounded-lg p-4 flex items-center">
-        <svg
-          className="w-5 h-5 mr-3 text-blue-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <div className="flex-1">
-          <div className="font-medium mb-1">当前分析页面：</div>
-          <div className="text-sm truncate">{currentUrl}</div>
-        </div>
-        <button
-          onClick={runPerformanceCheck}
-          disabled={loading}
-          className="ml-4 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 flex items-center"
-        >
-          {loading ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              分析中...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              重新分析
-            </>
+    <div className="p-4">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-1">
+          {t("performance_detection", "性能检测")}
+        </h2>
+        <p className="text-sm text-gray-600">
+          {t(
+            "analyze_page_performance",
+            "分析当前页面的加载性能和资源使用情况"
           )}
-        </button>
+        </p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          <div className="flex">
-            <svg
-              className="h-5 w-5 text-red-500 mr-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+      {isLoading ? (
+        <motion.div
+          className="flex justify-center items-center py-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="ml-2 text-gray-600">
+            {t("loading_performance", "加载性能数据中...")}
+          </span>
+        </motion.div>
+      ) : error ? (
+        <motion.div
+          className="bg-red-50 text-red-700 p-4 rounded-lg shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="font-medium mb-1">{t("error", "错误")}</h3>
+          <p className="text-sm break-words">{error}</p>
+          <div className="mt-3 space-y-2">
+            <button
+              onClick={() => fetchPerformance(true)}
+              className="w-full text-white bg-red-600 hover:bg-red-700 py-2 px-3 rounded text-sm font-medium transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              {t("try_again", "重试")}
+            </button>
+            <div className="text-xs text-red-600 mt-2">
+              <p>
+                {t(
+                  "troubleshooting_tips",
+                  "故障排除提示: 尝试刷新页面后再检测，或者在页面完全加载后再尝试。"
+                )}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      ) : performance ? (
+        <div className="space-y-6">
+          {/* 顶部信息 */}
+          <motion.div
+            className="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-100"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center">
+              <div className="text-xl text-blue-700 mr-2">ℹ️</div>
+              <div>
+                <h3 className="font-medium text-blue-800">
+                  {t("current_page", "当前页面")}
+                </h3>
+                <p className="text-sm text-blue-700 truncate max-w-full">
+                  {currentUrl}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* 区块一：评分和加载时间 */}
+          <div>
+            <h3 className="text-base font-semibold text-gray-700 mb-3">
+              {t("performance_overview", "性能概览")}
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* 总体评分卡片 */}
+              <ScoreCard
+                score={performance.score}
+                title={t("overall_score", "总体评分")}
+                getRating={getPerformanceRating}
+                t={t}
               />
-            </svg>
-            <span>{error}</span>
+
+              {/* 加载时间卡片 */}
+              <MetricCard
+                title={t("loading_time", "加载时间")}
+                value={formatNumber(performance.timing / 1000 || 0)}
+                unit="s"
+                status={
+                  performance.timing < 2000
+                    ? "good"
+                    : performance.timing < 4000
+                    ? "medium"
+                    : "poor"
+                }
+                icon="⏱️"
+                description={t(
+                  getLoadingTimeRating(performance.timing),
+                  getLoadingTimeRating(performance.timing)
+                )}
+              />
+            </div>
+
+            {/* 关键性能指标 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <MetricCard
+                title={t("first_paint", "首次绘制")}
+                value={formatTimeInMs(performance.firstPaint)}
+                status={
+                  performance.firstPaint < 1000
+                    ? "good"
+                    : performance.firstPaint < 2000
+                    ? "medium"
+                    : "poor"
+                }
+              />
+
+              <MetricCard
+                title={t("first_contentful_paint", "首次内容绘制")}
+                value={formatTimeInMs(performance.firstContentfulPaint)}
+                status={
+                  performance.firstContentfulPaint < 1500
+                    ? "good"
+                    : performance.firstContentfulPaint < 3000
+                    ? "medium"
+                    : "poor"
+                }
+              />
+
+              <MetricCard
+                title={t("dom_interactive", "DOM可交互")}
+                value={formatTimeInMs(performance.domInteractive)}
+                status={
+                  performance.domInteractive < 2000
+                    ? "good"
+                    : performance.domInteractive < 4000
+                    ? "medium"
+                    : "poor"
+                }
+              />
+
+              <MetricCard
+                title={t("dom_complete", "DOM完成")}
+                value={formatTimeInMs(performance.domComplete)}
+                status={
+                  performance.domComplete < 3000
+                    ? "good"
+                    : performance.domComplete < 6000
+                    ? "medium"
+                    : "poor"
+                }
+              />
+            </div>
           </div>
+
+          {/* 区块二：资源数量、大小和图表 */}
+          <div>
+            <h3 className="text-base font-semibold text-gray-700 mb-3">
+              {t("resource_analysis", "资源分析")}
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <MetricCard
+                title={t("resource_count", "资源数量")}
+                value={performance.resourceCount}
+                status={getResourceCountStatus(performance.resourceCount)}
+                icon="📦"
+              />
+
+              <MetricCard
+                title={t("resource_size", "资源大小")}
+                value={bytesToSize(performance.resourceSize)}
+                status={getResourceSizeStatus(performance.resourceSize)}
+                icon="📊"
+              />
+
+              <MetricCard
+                title={t("cache_hit_rate", "缓存命中率")}
+                value={performance.cacheHitRate}
+                unit="%"
+                status={getCacheHitRateStatus(performance.cacheHitRate)}
+                icon="📝"
+              />
+
+              <MetricCard
+                title={t("memory_usage", "内存使用")}
+                value={performance.memoryUsage}
+                unit="MB"
+                status={getMemoryUsageStatus(performance.memoryUsage)}
+                icon="💾"
+              />
+            </div>
+
+            {/* 执行时间指标 */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+              <MetricCard
+                title={t("js_execution_time", "JS执行时间")}
+                value={formatTimeInMs(performance.jsExecutionTime)}
+                status={
+                  performance.jsExecutionTime < 300
+                    ? "good"
+                    : performance.jsExecutionTime < 800
+                    ? "medium"
+                    : "poor"
+                }
+              />
+
+              <MetricCard
+                title={t("css_parsing_time", "CSS解析时间")}
+                value={formatTimeInMs(performance.cssParsingTime)}
+                status={
+                  performance.cssParsingTime < 100
+                    ? "good"
+                    : performance.cssParsingTime < 300
+                    ? "medium"
+                    : "poor"
+                }
+              />
+
+              <MetricCard
+                title={t("dom_elements", "DOM元素数量")}
+                value={performance.domElements}
+                status={
+                  performance.domElements < 500
+                    ? "good"
+                    : performance.domElements < 1500
+                    ? "medium"
+                    : "poor"
+                }
+              />
+            </div>
+
+            {/* 资源分析图表 */}
+            <ResourceChart
+              resourceTypes={performance.resourceTypes}
+              jsSize={performance.jsSize}
+              cssSize={performance.cssSize}
+              imageSize={performance.imageSize}
+              t={t}
+            />
+          </div>
+
+          {/* 运行性能检测按钮 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <button
+              onClick={() => fetchPerformance(false)}
+              className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {t("run_test", "重新检测")}
+            </button>
+          </motion.div>
         </div>
-      )}
-
-      {performance && !error && (
-        <>
-          {/* 视图切换导航 */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex" aria-label="Tabs">
-              <button
-                onClick={() => setActiveView("metrics")}
-                className={`${
-                  activeView === "metrics"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                } w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm`}
-              >
-                性能指标
-              </button>
-              <button
-                onClick={() => setActiveView("recommendations")}
-                className={`${
-                  activeView === "recommendations"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                } w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm`}
-              >
-                优化建议
-              </button>
-              <button
-                onClick={() => setActiveView("resources")}
-                className={`${
-                  activeView === "resources"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                } w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm`}
-              >
-                资源分析
-              </button>
-            </nav>
-          </div>
-
-          {/* 性能评分卡片 */}
-          <div className="flex flex-col md:flex-row gap-5">
-            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 p-5 text-center">
-              <div className="text-xl font-bold mb-2">性能评分</div>
-              <div className={`text-5xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <div
-                className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${PERFORMANCE_GRADES[grade].bg} ${PERFORMANCE_GRADES[grade].color}`}
-              >
-                {grade}级 - {PERFORMANCE_GRADES[grade].description}
-              </div>
-            </div>
-
-            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-              <div className="text-xl font-bold mb-3 text-center">关键指标</div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">页面加载时间：</span>
-                  <span className="font-medium">
-                    {performance.loadTime.toFixed(0)} 毫秒
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">最大内容绘制：</span>
-                  <span className="font-medium">
-                    {performance.largestContentfulPaint.toFixed(0)} 毫秒
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">资源总数：</span>
-                  <span className="font-medium">
-                    {performance.resourceCount} 个
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">资源总大小：</span>
-                  <span className="font-medium">
-                    {formatSizeInKB(performance.resourceSize)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 性能指标视图 */}
-          {activeView === "metrics" && (
-            <div className="space-y-6">
-              {/* 加载时间可视化 */}
-              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-lg mb-3">页面加载时间分解</h3>
-                <div className="w-full h-8 rounded-full bg-gray-100 flex overflow-hidden">
-                  {performance.dnsTime > 0 && (
-                    <div
-                      className={METRICS_CONFIG.dnsTime.color}
-                      style={{
-                        width: `${Math.max(
-                          1,
-                          (performance.dnsTime / performance.loadTime) * 100
-                        )}%`,
-                      }}
-                      title={`DNS解析时间: ${performance.dnsTime.toFixed(1)}ms`}
-                    ></div>
-                  )}
-                  {performance.tcpTime > 0 && (
-                    <div
-                      className={METRICS_CONFIG.tcpTime.color}
-                      style={{
-                        width: `${Math.max(
-                          1,
-                          (performance.tcpTime / performance.loadTime) * 100
-                        )}%`,
-                      }}
-                      title={`TCP连接时间: ${performance.tcpTime.toFixed(1)}ms`}
-                    ></div>
-                  )}
-                  {performance.requestTime > 0 && (
-                    <div
-                      className={METRICS_CONFIG.requestTime.color}
-                      style={{
-                        width: `${Math.max(
-                          1,
-                          (performance.requestTime / performance.loadTime) * 100
-                        )}%`,
-                      }}
-                      title={`请求响应时间: ${performance.requestTime.toFixed(
-                        1
-                      )}ms`}
-                    ></div>
-                  )}
-                  {performance.domTime > 0 && (
-                    <div
-                      className={METRICS_CONFIG.domTime.color}
-                      style={{
-                        width: `${Math.max(
-                          1,
-                          (performance.domTime / performance.loadTime) * 100
-                        )}%`,
-                      }}
-                      title={`DOM解析时间: ${performance.domTime.toFixed(1)}ms`}
-                    ></div>
-                  )}
-                </div>
-
-                {/* 指标说明 */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${METRICS_CONFIG.dnsTime.color} mr-2`}
-                    ></div>
-                    <div className="text-sm">
-                      <div className="font-medium">DNS解析</div>
-                      <div>{performance.dnsTime.toFixed(1)}ms</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${METRICS_CONFIG.tcpTime.color} mr-2`}
-                    ></div>
-                    <div className="text-sm">
-                      <div className="font-medium">TCP连接</div>
-                      <div>{performance.tcpTime.toFixed(1)}ms</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${METRICS_CONFIG.requestTime.color} mr-2`}
-                    ></div>
-                    <div className="text-sm">
-                      <div className="font-medium">请求响应</div>
-                      <div>{performance.requestTime.toFixed(1)}ms</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${METRICS_CONFIG.domTime.color} mr-2`}
-                    ></div>
-                    <div className="text-sm">
-                      <div className="font-medium">DOM解析</div>
-                      <div>{performance.domTime.toFixed(1)}ms</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 高级指标 */}
-              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-lg">详细性能指标</h3>
-                  <button
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                    onClick={() => setShowAdvancedMetrics(!showAdvancedMetrics)}
-                  >
-                    {showAdvancedMetrics ? (
-                      <>
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
-                        收起
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                        展开
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      首次内容绘制 (FCP)
-                    </span>
-                    <span className="font-medium">
-                      {performance.firstContentfulPaint.toFixed(0)}ms
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      最大内容绘制 (LCP)
-                    </span>
-                    <span className="font-medium">
-                      {performance.largestContentfulPaint.toFixed(0)}ms
-                    </span>
-                  </div>
-                  {showAdvancedMetrics && (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          JS执行时间
-                        </span>
-                        <span className="font-medium">
-                          {performance.jsExecutionTime.toFixed(0)}ms
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          CSS解析时间
-                        </span>
-                        <span className="font-medium">
-                          {performance.cssParsingTime.toFixed(0)}ms
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          缓存命中率
-                        </span>
-                        <span className="font-medium">
-                          {performance.resourceCount > 0
-                            ? `${Math.round(
-                                (performance.cachedResourceCount /
-                                  performance.resourceCount) *
-                                  100
-                              )}%`
-                            : "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          网络请求数
-                        </span>
-                        <span className="font-medium">
-                          {performance.networkResourceCount}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          缓存请求数
-                        </span>
-                        <span className="font-medium">
-                          {performance.cachedResourceCount}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          总资源大小
-                        </span>
-                        <span className="font-medium">
-                          {formatSizeInKB(performance.resourceSize)}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 优化建议视图 */}
-          {activeView === "recommendations" && (
-            <div className="space-y-4">
-              {recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className={`p-4 border rounded-lg ${getImportanceClass(
-                    rec.importance
-                  )}`}
-                >
-                  <div className="flex items-center mb-2">
-                    {rec.importance === "high" ? (
-                      <svg
-                        className="w-5 h-5 mr-2 text-red-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                    ) : rec.importance === "medium" ? (
-                      <svg
-                        className="w-5 h-5 mr-2 text-yellow-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5 mr-2 text-blue-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    )}
-                    <h4 className="font-medium">{rec.title}</h4>
-                  </div>
-                  <p className="ml-7 text-sm">{rec.description}</p>
-                </div>
-              ))}
-
-              {recommendations.length === 0 && (
-                <div className="flex justify-center items-center p-8 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-center">
-                    <svg
-                      className="w-12 h-12 mx-auto text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <h3 className="mt-2 text-lg font-medium text-gray-900">
-                      暂无优化建议
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      当前页面性能良好，无需特别优化。
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 资源分析视图 */}
-          {activeView === "resources" && (
-            <div className="space-y-5">
-              {/* 资源类型分布 */}
-              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-lg mb-4">资源类型分布</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                    <div className="text-sm text-blue-800 mb-1">JavaScript</div>
-                    <div className="text-xl font-medium text-blue-600">
-                      {performance?.resourceCount &&
-                      performance.resourceCount > 0
-                        ? Math.round(performance.resourceCount * 0.3)
-                        : 0}{" "}
-                      个
-                    </div>
-                    <div className="text-xs text-blue-500 mt-1">
-                      {formatSizeInKB(
-                        performance?.resourceSize &&
-                          performance.resourceSize > 0
-                          ? performance.resourceSize * 0.4
-                          : 0
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                    <div className="text-sm text-purple-800 mb-1">CSS</div>
-                    <div className="text-xl font-medium text-purple-600">
-                      {performance?.resourceCount &&
-                      performance.resourceCount > 0
-                        ? Math.round(performance.resourceCount * 0.15)
-                        : 0}{" "}
-                      个
-                    </div>
-                    <div className="text-xs text-purple-500 mt-1">
-                      {formatSizeInKB(
-                        performance?.resourceSize &&
-                          performance.resourceSize > 0
-                          ? performance.resourceSize * 0.15
-                          : 0
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
-                    <div className="text-sm text-green-800 mb-1">图片</div>
-                    <div className="text-xl font-medium text-green-600">
-                      {performance?.resourceCount &&
-                      performance.resourceCount > 0
-                        ? Math.round(performance.resourceCount * 0.35)
-                        : 0}{" "}
-                      个
-                    </div>
-                    <div className="text-xs text-green-500 mt-1">
-                      {formatSizeInKB(
-                        performance?.resourceSize &&
-                          performance.resourceSize > 0
-                          ? performance.resourceSize * 0.35
-                          : 0
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
-                    <div className="text-sm text-yellow-800 mb-1">其他</div>
-                    <div className="text-xl font-medium text-yellow-600">
-                      {performance?.resourceCount &&
-                      performance.resourceCount > 0
-                        ? Math.round(performance.resourceCount * 0.2)
-                        : 0}{" "}
-                      个
-                    </div>
-                    <div className="text-xs text-yellow-500 mt-1">
-                      {formatSizeInKB(
-                        performance?.resourceSize &&
-                          performance.resourceSize > 0
-                          ? performance.resourceSize * 0.1
-                          : 0
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 缓存利用率 */}
-              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-lg">缓存利用率</h3>
-                  <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {performance.resourceCount > 0
-                      ? `${Math.round(
-                          (performance.cachedResourceCount /
-                            performance.resourceCount) *
-                            100
-                        )}%`
-                      : "N/A"}
-                  </div>
-                </div>
-
-                <div className="w-full h-6 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{
-                      width: `${
-                        performance.resourceCount > 0
-                          ? Math.round(
-                              (performance.cachedResourceCount /
-                                performance.resourceCount) *
-                                100
-                            )
-                          : 0
-                      }%`,
-                    }}
-                  ></div>
-                </div>
-
-                <div className="flex justify-between text-sm mt-2 text-gray-600">
-                  <div>已缓存: {performance.cachedResourceCount} 个</div>
-                  <div>网络请求: {performance.networkResourceCount} 个</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          {t("no_data", "暂无性能数据")}
+        </div>
       )}
     </div>
   );

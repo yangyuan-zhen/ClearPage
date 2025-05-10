@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html id="html-document" lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearPage - 简单高效的网页数据清理工具</title>
+    <title>ClearPage - Simple and Efficient Web Data Cleaner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
@@ -673,6 +673,10 @@
             <div class="language-switch">
                 <button class="language-btn active" data-lang="zh-CN">中文</button>
                 <button class="language-btn" data-lang="en">English</button>
+                <button id="testTranslateBtn"
+                    style="display:none; margin-left: 10px; background-color: #ff9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                    测试翻译
+                </button>
             </div>
         </div>
     </header>
@@ -833,9 +837,30 @@
         </div>
     </footer>
 
-    <!-- 添加外部脚本文件引用 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const testBtn = document.getElementById('testTranslateBtn');
+            if (testBtn) {
+                document.addEventListener('keydown', function (e) {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                        testBtn.style.display = testBtn.style.display === 'none' ? 'inline-block' : 'none';
+                    }
+                });
+
+                testBtn.addEventListener('click', function () {
+                    if (window.updatePageLanguage) {
+                        window.updatePageLanguage('en');
+                    } else {
+                        alert('翻译函数不可用');
+                    }
+                });
+            }
+        });
+    </script>
+
     <script src="browser-detect.js"></script>
     <script src="i18n.js"></script>
+    <script src="landing-scripts.js"></script>
 </body>
 
 </html>

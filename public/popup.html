@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN" id="html-document">
+<html id="html-document" lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cache Cleaner</title>
+    <title>ClearPage</title>
     <!-- 确保i18n.js先加载 -->
     <script src="i18n.js"></script>
 </head>
@@ -12,6 +12,27 @@
 <body>
     <div id="root"></div>
     <script src="popup.js"></script>
+    <script>
+        // 为React和原生JS之间提供通信桥梁
+        document.addEventListener('DOMContentLoaded', function () {
+            // 监听语言变更事件
+            document.addEventListener('languageChanged', function (event) {
+                const lang = event.detail.language;
+
+                // 如果React的Context已经准备好了，通知它
+                if (window.updateReactLanguage) {
+                    window.updateReactLanguage(lang);
+                }
+            });
+
+            // 检查是否有保存的语言设置
+            const savedLang = localStorage.getItem('clearpage_language');
+            if (savedLang) {
+                // 设置HTML文档的lang属性
+                document.documentElement.setAttribute('lang', savedLang);
+            }
+        });
+    </script>
 </body>
 
 </html>

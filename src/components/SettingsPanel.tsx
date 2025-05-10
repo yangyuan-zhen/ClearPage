@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DataType } from "../types";
-import { getMessage } from "../utils/i18n";
-import { useLanguage } from "../contexts/LanguageContext";
+import { useI18n } from "../utils/i18n";
 
 // 清理规则接口定义
 interface CleaningRule {
@@ -45,8 +44,7 @@ const loadRules = async (): Promise<CleaningRule[]> => {
 };
 
 const SettingsPanel: React.FC = () => {
-  // 使用语言上下文
-  const { t } = useLanguage();
+  const { t, currentLang } = useI18n();
 
   const [rules, setRules] = useState<CleaningRule[]>([]);
   const [editingRule, setEditingRule] = useState<CleaningRule | null>(null);

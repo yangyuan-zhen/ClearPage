@@ -28,5 +28,22 @@
     "16": "shovel.png",
     "48": "shovel.png",
     "128": "shovel.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup.html",
+        "landing.html",
+        "i18n.js",
+        "browser-detect.js",
+        "landing-scripts.js",
+        "shovel.png",
+        "wx.png",
+        "zfb.jpg",
+        "ava/*.jpg",
+        "locales/*.json"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
