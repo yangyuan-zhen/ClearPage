@@ -1,13 +1,15 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "@/components/App";
+import ReactDOM from "react-dom";
+import App from "./components/App";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import "./styles/tailwind.css";
+import "./index.css";
 
-const root = document.getElementById("root");
-if (root) {
-  ReactDOM.createRoot(root).render(
-    <React.StrictMode>
+ReactDOM.render(
+  <React.StrictMode>
+    <LanguageProvider>
       <App />
-    </React.StrictMode>
-  );
-}
+    </LanguageProvider>
+  </React.StrictMode>,
+  document.getElementById("root")
+);

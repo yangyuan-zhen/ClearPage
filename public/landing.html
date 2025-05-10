@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClearPage - 简单高效的网页数据清理工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,151 +17,264 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #f8f9fa;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 30px;
         }
 
         header {
-            background-color: #ffffff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: fixed;
+            width: 100%;
+            z-index: 100;
+            transition: all 0.3s ease;
+            padding: 15px 0;
         }
 
-        .hero {
+        header .container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 60px 0;
+        }
+
+        /* 语言切换按钮样式 */
+        .language-switch {
+            display: flex;
+            align-items: center;
+        }
+
+        .language-btn {
+            padding: 8px 12px;
+            border: 1px solid #e1e1e1;
+            background: transparent;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #1d1d1f;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .language-btn:hover {
+            background-color: #f5f5f7;
+        }
+
+        .language-btn.active {
+            background-color: #0071e3;
+            color: white;
+            border-color: #0071e3;
+        }
+
+        .hero {
+            padding: 180px 0 120px;
+            background: linear-gradient(to bottom, #fbfbfd 0%, #f5f5f7 100%);
         }
 
         .hero-content {
-            flex: 1;
-            padding-right: 40px;
+            max-width: 780px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 0 20px;
         }
 
         .hero-image {
-            flex: 1;
+            margin-top: 60px;
             text-align: center;
         }
 
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+            line-height: 1.1;
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: #7f8c8d;
-            margin-bottom: 30px;
+            font-size: 26px;
+            color: #6e6e73;
+            margin-bottom: 40px;
+            font-weight: 300;
+            line-height: 1.4;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .btn {
             display: inline-block;
-            background-color: #3498db;
+            background-color: #0071e3;
             color: white;
-            padding: 12px 24px;
-            border-radius: 4px;
+            padding: 16px 32px;
+            border-radius: 30px;
             text-decoration: none;
-            font-weight: bold;
-            font-size: 1rem;
-            transition: background-color 0.3s;
+            font-weight: 500;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
         }
 
         .btn:hover {
-            background-color: #2980b9;
+            background-color: #0077ED;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 113, 227, 0.3);
         }
 
         .features {
-            padding: 80px 0;
+            padding: 120px 0;
             background-color: #ffffff;
         }
 
         .section-title {
             text-align: center;
-            margin-bottom: 50px;
-            font-size: 2rem;
-            color: #2c3e50;
+            margin-bottom: 80px;
+            font-size: 40px;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: -0.5px;
         }
 
         .feature-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
+            gap: 40px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
 
         .feature-card {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s;
+            background-color: #fbfbfd;
+            border-radius: 20px;
+            padding: 40px 30px;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
         }
 
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #3498db;
+            font-size: 48px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f2f2f2, #ffffff);
+            border-radius: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .feature-title {
-            font-size: 1.4rem;
-            margin-bottom: 15px;
-            color: #2c3e50;
+            font-size: 22px;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #6e6e73;
+            font-size: 16px;
+            line-height: 1.5;
         }
 
         .how-to-use {
-            padding: 80px 0;
-            background-color: #f8f9fa;
+            padding: 120px 0;
+            background: linear-gradient(to bottom, #ffffff 0%, #f5f5f7 100%);
         }
 
         .steps {
             display: flex;
             justify-content: space-between;
-            margin-top: 40px;
+            margin-top: 60px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .step {
             flex: 1;
             text-align: center;
             padding: 0 20px;
+            position: relative;
+        }
+
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            right: -30px;
+            width: 60px;
+            height: 2px;
+            background-color: #d2d2d7;
         }
 
         .step-number {
-            display: inline-block;
+            display: inline-flex;
             width: 40px;
             height: 40px;
             line-height: 40px;
-            background-color: #3498db;
+            align-items: center;
+            justify-content: center;
+            background-color: #0071e3;
             color: white;
             border-radius: 50%;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
+        }
+
+        .step h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+
+        .step p {
+            color: #6e6e73;
+            font-size: 16px;
         }
 
         /* 赞赏部分样式 */
         .donate {
-            padding: 80px 0;
+            padding: 120px 0;
             background-color: #ffffff;
             text-align: center;
+        }
+
+        .donate p {
+            color: #6e6e73;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .donate-container {
             display: flex;
             justify-content: center;
-            gap: 50px;
-            margin-top: 30px;
+            gap: 60px;
+            margin-top: 60px;
         }
 
         .donate-item {
@@ -169,9 +286,9 @@
         }
 
         .donate-title {
-            font-size: 1.2rem;
-            margin-top: 20px;
-            color: #2c3e50;
+            font-size: 20px;
+            margin-top: 24px;
+            color: #1d1d1f;
             font-weight: 500;
         }
 
@@ -181,113 +298,126 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
+            border-radius: 16px;
             background-color: #fff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
             padding: 10px;
+            transition: all 0.4s ease;
+        }
+
+        .donate-img-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
         }
 
         .donate-img {
             max-width: 100%;
             max-height: 100%;
-            border-radius: 4px;
-            transition: transform 0.3s;
-        }
-
-        .donate-img:hover {
-            transform: scale(1.05);
+            border-radius: 8px;
         }
 
         /* 赞赏墙样式 */
         .supporter-wall {
-            padding: 80px 0;
-            background-color: #f8f9fa;
+            padding: 120px 0;
+            background: linear-gradient(to bottom, #ffffff 0%, #f5f5f7 100%);
             text-align: center;
+        }
+
+        .supporter-wall p {
+            color: #6e6e73;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .supporter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 30px;
             max-width: 1000px;
-            margin: 40px auto 0;
+            margin: 60px auto 0;
         }
 
         .supporter-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: transform 0.3s;
+            transition: all 0.4s ease;
         }
 
         .supporter-item:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
         }
 
         .supporter-avatar {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             object-fit: cover;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-            border: 3px solid #fff;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border: 4px solid #fff;
+            transition: all 0.4s ease;
+        }
+
+        .supporter-item:hover .supporter-avatar {
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
         }
 
         .supporter-name {
-            margin-top: 10px;
-            font-size: 0.9rem;
+            margin-top: 16px;
+            font-size: 16px;
             font-weight: 500;
-            color: #2c3e50;
+            color: #1d1d1f;
         }
 
         .supporter-date {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-            margin-top: 2px;
-        }
-
-        .supporter-message {
-            font-size: 0.85rem;
-            color: #34495e;
-            margin-top: 5px;
-            font-style: italic;
+            font-size: 14px;
+            color: #6e6e73;
+            margin-top: 4px;
         }
 
         /* 评价墙样式 */
         .review-wall {
-            padding: 80px 0;
+            padding: 120px 0;
             background-color: #ffffff;
             text-align: center;
         }
 
+        .review-wall>.container>p {
+            color: #6e6e73;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .review-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 30px;
             max-width: 1200px;
-            margin: 40px auto 0;
+            margin: 60px auto 0;
         }
 
         .review-card {
-            background-color: #f8f9fa;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            background-color: #fbfbfd;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
             text-align: left;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.4s ease;
             display: flex;
             flex-direction: column;
         }
 
         .review-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
         }
 
         .review-header {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .review-avatar {
@@ -295,9 +425,9 @@
             height: 60px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: 15px;
+            margin-right: 16px;
             border: 3px solid #fff;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .review-user-info {
@@ -306,104 +436,229 @@
 
         .review-username {
             font-weight: 600;
-            font-size: 1.1rem;
-            color: #2c3e50;
-            margin-bottom: 5px;
+            font-size: 18px;
+            color: #1d1d1f;
+            margin-bottom: 4px;
         }
 
         .review-date {
-            font-size: 0.8rem;
-            color: #7f8c8d;
+            font-size: 14px;
+            color: #6e6e73;
         }
 
         .review-stars {
-            color: #f1c40f;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            color: #f9b700;
+            font-size: 18px;
+            margin-bottom: 16px;
         }
 
         .review-content {
-            font-size: 0.95rem;
+            font-size: 16px;
             line-height: 1.6;
-            color: #34495e;
+            color: #1d1d1f;
             flex-grow: 1;
         }
 
         .review-source {
-            margin-top: 15px;
-            font-size: 0.8rem;
-            color: #7f8c8d;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #6e6e73;
             text-align: right;
             font-style: italic;
         }
 
         footer {
-            background-color: #2c3e50;
-            color: white;
-            padding: 40px 0;
+            background-color: #f5f5f7;
+            color: #6e6e73;
+            padding: 60px 0;
             text-align: center;
         }
 
+        footer p {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
         .footer-links {
-            margin-top: 20px;
+            margin-top: 24px;
         }
 
         .footer-links a {
-            color: #ecf0f1;
-            margin: 0 10px;
+            color: #0071e3;
+            margin: 0 16px;
             text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #0077ED;
+            text-decoration: underline;
+        }
+
+        /* 添加简单的页面载入动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-content,
+        .feature-card,
+        .step,
+        .donate-item,
+        .supporter-item,
+        .review-card {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .feature-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .feature-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .feature-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-card:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        .feature-card:nth-child(6) {
+            animation-delay: 0.5s;
+        }
+
+        .step:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .step:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .step:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        @media (max-width: 1024px) {
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                font-size: 44px;
+            }
+
+            .subtitle {
+                font-size: 22px;
+            }
         }
 
         @media (max-width: 768px) {
             .hero {
-                flex-direction: column;
-            }
-
-            .hero-content {
-                padding-right: 0;
-                margin-bottom: 40px;
-            }
-
-            .feature-grid {
-                grid-template-columns: 1fr;
+                padding: 140px 0 80px;
             }
 
             .steps {
                 flex-direction: column;
+                gap: 40px;
             }
 
-            .step {
-                margin-bottom: 30px;
+            .step:not(:last-child)::after {
+                display: none;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 32px;
+                margin-bottom: 50px;
+            }
+
+            .features,
+            .how-to-use,
+            .donate,
+            .supporter-wall,
+            .review-wall {
+                padding: 80px 0;
             }
 
             .donate-container {
                 flex-direction: column;
                 align-items: center;
-                gap: 30px;
+                gap: 40px;
             }
 
             .donate-item {
                 height: auto;
-                margin-bottom: 20px;
-            }
-
-            .donate-img-container {
-                width: 200px;
-                height: 280px;
-            }
-
-            .supporter-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                gap: 15px;
+                margin-bottom: 0;
             }
 
             .review-grid {
                 grid-template-columns: 1fr;
-                padding: 0 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 20px;
             }
 
-            .review-card {
-                padding: 20px;
+            h1 {
+                font-size: 32px;
+            }
+
+            .subtitle {
+                font-size: 18px;
+            }
+
+            .btn {
+                padding: 14px 24px;
+                font-size: 16px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .feature-title {
+                font-size: 20px;
+            }
+
+            .feature-icon {
+                font-size: 36px;
+                width: 70px;
+                height: 70px;
+            }
+
+            .language-switch {
+                margin-left: auto;
+            }
+
+            .language-btn {
+                padding: 6px 10px;
+                font-size: 12px;
             }
         }
     </style>
@@ -413,8 +668,12 @@
     <header>
         <div class="container">
             <nav>
-                <img src="shovel.png" alt="ClearPage Logo" height="40">
+                <img src="shovel.png" alt="ClearPage Logo" height="36">
             </nav>
+            <div class="language-switch">
+                <button class="language-btn active" data-lang="zh-CN">中文</button>
+                <button class="language-btn" data-lang="en">English</button>
+            </div>
         </div>
     </header>
 
@@ -422,45 +681,45 @@
         <div class="container">
             <div class="hero-content">
                 <h1>ClearPage</h1>
-                <p class="subtitle">一个简单高效的 Chrome 扩展，帮助您快速清理特定网站的缓存、Cookie 等浏览数据。</p>
-                <a href="https://github.com/yangyuan-zhen/ClearPage" class="btn">立即安装</a>
+                <p class="subtitle" data-i18n="landing_subtitle">一个强大的浏览器扩展，帮助您快速清理网站缓存、分析页面性能并提供全面的数据管理方案。</p>
+                <a href="#" id="installButton" class="btn" data-i18n="landing_install_button">立即安装</a>
             </div>
         </div>
     </section>
 
     <section class="features">
         <div class="container">
-            <h2 class="section-title">主要功能</h2>
+            <h2 class="section-title" data-i18n="landing_features_title">主要功能</h2>
             <div class="feature-grid">
                 <div class="feature-card">
                     <div class="feature-icon">🎯</div>
-                    <h3 class="feature-title">精确清理</h3>
-                    <p>精确清理当前网站的缓存数据，无需清理整个浏览器的缓存。</p>
+                    <h3 class="feature-title" data-i18n="landing_feature_smart_clean_title">智能清理</h3>
+                    <p data-i18n="landing_feature_smart_clean_desc">支持智能和自定义两种清理模式，精确清理当前网站的缓存数据，无需清理整个浏览器的缓存。</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🚀</div>
-                    <h3 class="feature-title">快速刷新</h3>
-                    <p>清理后自动刷新页面，立即获得最新内容。</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚠️</div>
-                    <h3 class="feature-title">安全提示</h3>
-                    <p>清理敏感数据前会有安全提示，避免误操作导致重要信息丢失。</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">💡</div>
-                    <h3 class="feature-title">智能建议</h3>
-                    <p>提供清理建议，一键应用推荐的清理选项。</p>
+                    <h3 class="feature-title" data-i18n="landing_feature_quick_refresh_title">快速刷新</h3>
+                    <p data-i18n="landing_feature_quick_refresh_desc">清理后自动刷新页面，立即获得最新内容，加快网页加载速度。</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
-                    <h3 class="feature-title">性能检测</h3>
-                    <p>内置网页性能检测功能，帮助您了解网页加载速度。</p>
+                    <h3 class="feature-title" data-i18n="landing_feature_performance_title">性能分析</h3>
+                    <p data-i18n="landing_feature_performance_desc">全面分析页面性能指标、资源分布和优化建议，以可视化方式展示关键性能数据。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3 class="feature-title" data-i18n="landing_feature_custom_rules_title">自定义规则</h3>
+                    <p data-i18n="landing_feature_custom_rules_desc">创建和管理网站清理规则，支持导入导出设置，满足个性化需求。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3 class="feature-title" data-i18n="landing_feature_ui_title">界面优化</h3>
+                    <p data-i18n="landing_feature_ui_desc">全新侧边栏导航设计，提供更清晰直观的用户体验和操作流程。</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🌐</div>
-                    <h3 class="feature-title">多语言支持</h3>
-                    <p>支持中英文国际化，适应不同用户的语言偏好。</p>
+                    <h3 class="feature-title" data-i18n="landing_feature_i18n_title">多语言支持</h3>
+                    <p data-i18n="landing_feature_i18n_desc">支持中英文国际化，适应不同用户的语言偏好。</p>
                 </div>
             </div>
         </div>
@@ -468,27 +727,27 @@
 
     <section class="how-to-use">
         <div class="container">
-            <h2 class="section-title">如何使用</h2>
+            <h2 class="section-title" data-i18n="landing_how_to_use_title">如何使用</h2>
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <h3>安装扩展</h3>
-                    <p>从 Chrome 网上应用店或 GitHub 安装 ClearPage 扩展。</p>
+                    <h3 data-i18n="landing_step_install_title">安装扩展</h3>
+                    <p data-i18n="landing_step_install_desc">从浏览器应用商店安装ClearPage扩展。</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
-                    <h3>点击图标</h3>
-                    <p>在需要清理缓存的网站上点击 ClearPage 图标。</p>
+                    <h3 data-i18n="landing_step_click_title">点击图标</h3>
+                    <p data-i18n="landing_step_click_desc">在需要清理缓存的网站上点击ClearPage图标。</p>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <h3>选择数据类型</h3>
-                    <p>选择要清理的数据类型，如缓存、Cookie 等。</p>
+                    <h3 data-i18n="landing_step_select_title">选择功能</h3>
+                    <p data-i18n="landing_step_select_desc">从侧边栏选择清理数据、性能检测或设置选项。</p>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
-                    <h3>清理完成</h3>
-                    <p>点击"清除数据"按钮，完成清理并刷新页面。</p>
+                    <h3 data-i18n="landing_step_apply_title">应用操作</h3>
+                    <p data-i18n="landing_step_apply_desc">根据需要清理数据、分析性能或配置设置。</p>
                 </div>
             </div>
         </div>
@@ -497,23 +756,23 @@
     <!-- 新增赞赏部分 -->
     <section class="donate">
         <div class="container">
-            <h2 class="section-title">支持作者</h2>
-            <p style="text-align: center; margin-bottom: 30px;">如果您觉得这个扩展对您有帮助，欢迎赞赏支持我继续开发更多实用功能！</p>
+            <h2 class="section-title" data-i18n="landing_donate_title">支持作者</h2>
+            <p data-i18n="landing_donate_desc">如果您觉得这个扩展对您有帮助，欢迎赞赏支持我继续开发更多实用功能！</p>
             <div class="donate-container">
                 <div class="donate-item">
                     <div class="donate-img-container">
                         <img src="wx.png" alt="微信支付" class="donate-img">
                     </div>
-                    <h3 class="donate-title">微信赞赏</h3>
+                    <h3 class="donate-title" data-i18n="landing_donate_wechat">微信赞赏</h3>
                 </div>
                 <div class="donate-item">
                     <div class="donate-img-container">
                         <img src="zfb.jpg" alt="支付宝" class="donate-img">
                     </div>
-                    <h3 class="donate-title">支付宝赞赏</h3>
+                    <h3 class="donate-title" data-i18n="landing_donate_alipay">支付宝赞赏</h3>
                 </div>
             </div>
-            <p style="text-align: center; margin-top: 30px; font-style: italic; color: #7f8c8d;">
+            <p style="margin-top: 40px; font-style: italic;" data-i18n="landing_donate_thanks">
                 您的支持将帮助我们提供更好的工具和服务
             </p>
         </div>
@@ -522,8 +781,8 @@
     <!-- 赞赏墙 -->
     <section class="supporter-wall">
         <div class="container">
-            <h2 class="section-title">赞赏墙</h2>
-            <p style="text-align: center; margin-bottom: 30px;">感谢每一位支持者的慷慨赞赏，您的支持是我继续改进产品的动力！</p>
+            <h2 class="section-title" data-i18n="landing_supporter_title">赞赏墙</h2>
+            <p data-i18n="landing_supporter_desc">感谢每一位支持者的慷慨赞赏，您的支持是我继续改进产品的动力！</p>
             <div class="supporter-grid">
                 <div class="supporter-item">
                     <img src="ava/liergou.jpg" alt="用户头像" class="supporter-avatar">
@@ -531,7 +790,7 @@
                     <div class="supporter-date">2025-04-24</div>
                 </div>
             </div>
-            <p style="text-align: center; margin-top: 30px; font-style: italic; color: #7f8c8d;">
+            <p style="margin-top: 40px; font-style: italic;" data-i18n="landing_supporter_invitation">
                 您的名字也可以出现在这里 ↑
             </p>
         </div>
@@ -540,8 +799,8 @@
     <!-- 评价墙 -->
     <section class="review-wall">
         <div class="container">
-            <h2 class="section-title">用户评价</h2>
-            <p style="text-align: center; margin-bottom: 30px;">来自真实用户的使用体验和评价</p>
+            <h2 class="section-title" data-i18n="landing_reviews_title">用户评价</h2>
+            <p data-i18n="landing_reviews_desc">来自真实用户的使用体验和评价</p>
             <div class="review-grid">
                 <!-- 用户提供的真实评价 -->
                 <div class="review-card">
@@ -549,13 +808,12 @@
                         <img src="https://lh3.googleusercontent.com/a-/ALV-UjUoJy8-3XRQT6dzJmVOAdH-OwSQ6CevzAU2Wk8H4VJ51gxbpc4=s48-w48-h48"
                             alt="用户头像" class="review-avatar">
                         <div class="review-user-info">
-                            <div class="review-username">BZ Z
-                            </div>
+                            <div class="review-username">BZ Z</div>
                             <div class="review-date">2025-04-20</div>
                         </div>
                     </div>
                     <div class="review-stars">★★★★★</div>
-                    <div class="review-content">
+                    <div class="review-content" data-i18n="landing_review_1">
                         很好用，解决了两天的困扰，很适合开发，还有喜欢干净的人。
                     </div>
                     <div class="review-source">Chrome Web Store</div>
@@ -566,14 +824,18 @@
 
     <footer>
         <div class="container">
-            <p>© 2025 ClearPage. 保留所有权利。</p>
+            <p data-i18n="landing_footer_copyright">© 2025 ClearPage. 保留所有权利。</p>
             <div class="footer-links">
                 <a href="https://github.com/yangyuan-zhen/ClearPage">GitHub</a>
-                <a href="">隐私政策</a>
-                <a href="">联系我们</a>
+                <a href="" data-i18n="landing_footer_privacy">隐私政策</a>
+                <a href="" data-i18n="landing_footer_contact">联系我们</a>
             </div>
         </div>
     </footer>
+
+    <!-- 添加外部脚本文件引用 -->
+    <script src="browser-detect.js"></script>
+    <script src="i18n.js"></script>
 </body>
 
 </html>

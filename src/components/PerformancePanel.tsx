@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getPagePerformance } from "../utils/performanceUtils";
 import type { PagePerformance } from "../utils/performanceUtils";
 import { getMessage } from "../utils/i18n";
+import { useLanguage } from "../contexts/LanguageContext";
 
 // 性能指标类型及对应的颜色配置
 const METRICS_CONFIG = {
@@ -234,6 +235,7 @@ const formatNumber = (num: number): string => {
 };
 
 const PerformancePanel: React.FC = () => {
+  const { t } = useLanguage();
   const [performance, setPerformance] = useState<PagePerformance | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);

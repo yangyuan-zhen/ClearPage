@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CacheClearButton from "./CacheClearButton";
 import PerformancePanel from "./PerformancePanel";
 import SettingsPanel from "./SettingsPanel";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const App: React.FC = () => {
   // 当前激活的标签页
@@ -12,25 +13,24 @@ const App: React.FC = () => {
   // 性能面板的key，用于控制重新渲染
   const [performancePanelKey, setPerformancePanelKey] = useState<number>(0);
 
-  // 打开落地页的函数
-  const openLandingPage = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("landing.html") });
-  };
+  // 导航项key，用于控制导航重新渲染
+  const [navKey, setNavKey] = useState<number>(0);
 
-  // 切换到性能检测标签时触发重新渲染
-  const handleTabChange = (tab: "clean" | "performance" | "settings") => {
-    setActiveTab(tab);
-    if (tab === "performance") {
-      // 更新key以强制PerformancePanel重新渲染
-      setPerformancePanelKey((prevKey) => prevKey + 1);
-    }
-  };
+  // 使用语言上下文
+  const { currentLang, t, switchLanguage } = useLanguage();
 
-  // 定义导航项
+  // 语言变化时重新渲染组件
+  useEffect(() => {
+    // 仅在语言变化时强制重新渲染
+    setPerformancePanelKey((prevKey) => prevKey + 1);
+    setNavKey((prevKey) => prevKey + 1);
+  }, [currentLang]);
+
+  // 定义导航项 - 确保每次语言变化时更新
   const navItems = [
     {
       id: "clean",
-      label: "清理数据",
+      label: t("clearData", "清理数据"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -49,7 +49,7 @@ const App: React.FC = () => {
     },
     {
       id: "performance",
-      label: "性能检测",
+      label: t("performanceCheck", "性能检测"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -68,7 +68,7 @@ const App: React.FC = () => {
     },
     {
       id: "settings",
-      label: "设置",
+      label: t("settings", "设置"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -93,17 +93,31 @@ const App: React.FC = () => {
     },
   ];
 
+  // 打开落地页的函数
+  const openLandingPage = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("landing.html") });
+  };
+
+  // 切换到性能检测标签时触发重新渲染
+  const handleTabChange = (tab: "clean" | "performance" | "settings") => {
+    setActiveTab(tab);
+    if (tab === "performance") {
+      // 更新key以强制PerformancePanel重新渲染
+      setPerformancePanelKey((prevKey) => prevKey + 1);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-[500px] min-w-[800px] max-w-[800px] bg-white">
       {/* 侧边栏导航 */}
       <div className="w-64 bg-gray-100 border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-lg font-bold text-primary">
-            {chrome.i18n.getMessage("appTitle")}
+            {t("appTitle", "网页清理工具")}
           </h1>
         </div>
 
-        <nav className="mt-6 px-3 flex-1">
+        <nav className="mt-6 px-3 flex-1" key={navKey}>
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.id}>
@@ -126,7 +140,36 @@ const App: React.FC = () => {
             ))}
           </ul>
 
-          {/* 关于插件按钮 - 移至导航菜单下方 */}
+          {/* 语言切换按钮 */}
+          <div className="mt-6 mb-2">
+            <p className="px-2 text-xs text-gray-500 mb-2">
+              {currentLang === "zh-CN" ? "语言 / Language" : "Language / 语言"}
+            </p>
+            <div className="flex space-x-2 px-2">
+              <button
+                onClick={() => switchLanguage("zh-CN")}
+                className={`flex-1 py-2 px-2 text-xs rounded-md ${
+                  currentLang === "zh-CN"
+                    ? "bg-primary text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                中文
+              </button>
+              <button
+                onClick={() => switchLanguage("en")}
+                className={`flex-1 py-2 px-2 text-xs rounded-md ${
+                  currentLang === "en"
+                    ? "bg-primary text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
+
+          {/* 关于插件按钮 */}
           <div className="mt-8 px-1">
             <button
               onClick={openLandingPage}
@@ -145,7 +188,7 @@ const App: React.FC = () => {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              关于插件
+              {t("aboutPlugin", "关于插件")}
             </button>
           </div>
         </nav>
@@ -161,10 +204,17 @@ const App: React.FC = () => {
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {activeTab === "clean" &&
-                "清理浏览器缓存和网站数据，提高浏览体验"}
+                t(
+                  "cleanPageDescription",
+                  "清理浏览器缓存和网站数据，提高浏览体验"
+                )}
               {activeTab === "performance" &&
-                "分析当前页面的加载性能和资源使用情况"}
-              {activeTab === "settings" && "自定义插件的行为和清理规则"}
+                t(
+                  "performancePageDescription",
+                  "分析当前页面的加载性能和资源使用情况"
+                )}
+              {activeTab === "settings" &&
+                t("settingsPageDescription", "自定义插件的行为和清理规则")}
             </p>
           </div>
 

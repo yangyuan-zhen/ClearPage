@@ -129,5 +129,119 @@
   },
   "fileSystem": {
     "message": "文件系统存储"
+  },
+  "landing_subtitle": {
+    "message": "一个强大的浏览器扩展，帮助您快速清理网站缓存、分析页面性能并提供全面的数据管理方案。"
+  },
+  "landing_install_button": {
+    "message": "立即安装"
+  },
+  "landing_features_title": {
+    "message": "主要功能"
+  },
+  "landing_feature_smart_clean_title": {
+    "message": "智能清理"
+  },
+  "landing_feature_smart_clean_desc": {
+    "message": "支持智能和自定义两种清理模式，精确清理当前网站的缓存数据，无需清理整个浏览器的缓存。"
+  },
+  "landing_feature_quick_refresh_title": {
+    "message": "快速刷新"
+  },
+  "landing_feature_quick_refresh_desc": {
+    "message": "清理后自动刷新页面，立即获得最新内容，加快网页加载速度。"
+  },
+  "landing_feature_performance_title": {
+    "message": "性能分析"
+  },
+  "landing_feature_performance_desc": {
+    "message": "全面分析页面性能指标、资源分布和优化建议，以可视化方式展示关键性能数据。"
+  },
+  "landing_feature_custom_rules_title": {
+    "message": "自定义规则"
+  },
+  "landing_feature_custom_rules_desc": {
+    "message": "创建和管理网站清理规则，支持导入导出设置，满足个性化需求。"
+  },
+  "landing_feature_ui_title": {
+    "message": "界面优化"
+  },
+  "landing_feature_ui_desc": {
+    "message": "全新侧边栏导航设计，提供更清晰直观的用户体验和操作流程。"
+  },
+  "landing_feature_i18n_title": {
+    "message": "多语言支持"
+  },
+  "landing_feature_i18n_desc": {
+    "message": "支持中英文国际化，适应不同用户的语言偏好。"
+  },
+  "landing_how_to_use_title": {
+    "message": "如何使用"
+  },
+  "landing_step_install_title": {
+    "message": "安装扩展"
+  },
+  "landing_step_install_desc": {
+    "message": "从浏览器应用商店安装ClearPage扩展。"
+  },
+  "landing_step_click_title": {
+    "message": "点击图标"
+  },
+  "landing_step_click_desc": {
+    "message": "在需要清理缓存的网站上点击ClearPage图标。"
+  },
+  "landing_step_select_title": {
+    "message": "选择功能"
+  },
+  "landing_step_select_desc": {
+    "message": "从侧边栏选择清理数据、性能检测或设置选项。"
+  },
+  "landing_step_apply_title": {
+    "message": "应用操作"
+  },
+  "landing_step_apply_desc": {
+    "message": "根据需要清理数据、分析性能或配置设置。"
+  },
+  "landing_donate_title": {
+    "message": "支持作者"
+  },
+  "landing_donate_desc": {
+    "message": "如果您觉得这个扩展对您有帮助，欢迎赞赏支持我继续开发更多实用功能！"
+  },
+  "landing_donate_wechat": {
+    "message": "微信赞赏"
+  },
+  "landing_donate_alipay": {
+    "message": "支付宝赞赏"
+  },
+  "landing_donate_thanks": {
+    "message": "您的支持将帮助我们提供更好的工具和服务"
+  },
+  "landing_supporter_title": {
+    "message": "赞赏墙"
+  },
+  "landing_supporter_desc": {
+    "message": "感谢每一位支持者的慷慨赞赏，您的支持是我继续改进产品的动力！"
+  },
+  "landing_supporter_invitation": {
+    "message": "您的名字也可以出现在这里 ↑"
+  },
+  "landing_reviews_title": {
+    "message": "用户评价"
+  },
+  "landing_reviews_desc": {
+    "message": "来自真实用户的使用体验和评价"
+  },
+  "landing_review_1": {
+    "message": "很好用，解决了两天的困扰，很适合开发，还有喜欢干净的人。"
+  },
+  "landing_footer_copyright": {
+    "message": "© 2025 ClearPage. 保留所有权利。"
+  },
+  "landing_footer_privacy": {
+    "message": "隐私政策"
+  },
+  "landing_footer_contact": {
+    "message": "联系我们"
   }
 }

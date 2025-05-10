@@ -126,5 +126,119 @@
   },
   "fileSystem": {
     "message": "File System Storage"
+  },
+  "landing_subtitle": {
+    "message": "A powerful browser extension that helps you quickly clean website cache, analyze page performance, and provides comprehensive data management solutions."
+  },
+  "landing_install_button": {
+    "message": "Install Now"
+  },
+  "landing_features_title": {
+    "message": "Key Features"
+  },
+  "landing_feature_smart_clean_title": {
+    "message": "Smart Cleaning"
+  },
+  "landing_feature_smart_clean_desc": {
+    "message": "Supports both smart and custom cleaning modes, precisely cleans the current website's cache data without clearing the entire browser cache."
+  },
+  "landing_feature_quick_refresh_title": {
+    "message": "Quick Refresh"
+  },
+  "landing_feature_quick_refresh_desc": {
+    "message": "Automatically refreshes the page after cleaning, providing immediate access to the latest content and accelerating page loading speed."
+  },
+  "landing_feature_performance_title": {
+    "message": "Performance Analysis"
+  },
+  "landing_feature_performance_desc": {
+    "message": "Comprehensively analyzes page performance metrics, resource distribution, and optimization suggestions with visualized key performance data."
+  },
+  "landing_feature_custom_rules_title": {
+    "message": "Custom Rules"
+  },
+  "landing_feature_custom_rules_desc": {
+    "message": "Create and manage website cleaning rules, with support for importing and exporting settings to meet personalized needs."
+  },
+  "landing_feature_ui_title": {
+    "message": "UI Optimization"
+  },
+  "landing_feature_ui_desc": {
+    "message": "New sidebar navigation design provides a clearer and more intuitive user experience and operation flow."
+  },
+  "landing_feature_i18n_title": {
+    "message": "Multilingual Support"
+  },
+  "landing_feature_i18n_desc": {
+    "message": "Supports Chinese and English internationalization to adapt to different user language preferences."
+  },
+  "landing_how_to_use_title": {
+    "message": "How To Use"
+  },
+  "landing_step_install_title": {
+    "message": "Install Extension"
+  },
+  "landing_step_install_desc": {
+    "message": "Install the ClearPage extension from your browser's app store."
+  },
+  "landing_step_click_title": {
+    "message": "Click Icon"
+  },
+  "landing_step_click_desc": {
+    "message": "Click the ClearPage icon on any website you want to clean cache for."
+  },
+  "landing_step_select_title": {
+    "message": "Select Feature"
+  },
+  "landing_step_select_desc": {
+    "message": "Choose data cleaning, performance testing, or settings options from the sidebar."
+  },
+  "landing_step_apply_title": {
+    "message": "Apply Action"
+  },
+  "landing_step_apply_desc": {
+    "message": "Clean data, analyze performance, or configure settings as needed."
+  },
+  "landing_donate_title": {
+    "message": "Support Author"
+  },
+  "landing_donate_desc": {
+    "message": "If you find this extension helpful, please consider supporting me to continue developing more useful features!"
+  },
+  "landing_donate_wechat": {
+    "message": "WeChat Pay"
+  },
+  "landing_donate_alipay": {
+    "message": "Alipay"
+  },
+  "landing_donate_thanks": {
+    "message": "Your support will help us provide better tools and services"
+  },
+  "landing_supporter_title": {
+    "message": "Supporter Wall"
+  },
+  "landing_supporter_desc": {
+    "message": "Thank you to all supporters for your generous contributions. Your support motivates me to keep improving the product!"
+  },
+  "landing_supporter_invitation": {
+    "message": "Your name could also appear here ↑"
+  },
+  "landing_reviews_title": {
+    "message": "User Reviews"
+  },
+  "landing_reviews_desc": {
+    "message": "Experiences and reviews from real users"
+  },
+  "landing_review_1": {
+    "message": "Very useful, solved my two-day frustration. Perfect for developers and people who like things clean."
+  },
+  "landing_footer_copyright": {
+    "message": "© 2025 ClearPage. All rights reserved."
+  },
+  "landing_footer_privacy": {
+    "message": "Privacy Policy"
+  },
+  "landing_footer_contact": {
+    "message": "Contact Us"
   }
 }
