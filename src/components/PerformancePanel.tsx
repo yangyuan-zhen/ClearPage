@@ -409,7 +409,7 @@ const PerformancePanel: React.FC = () => {
                   {t("current_page", "当前页面")}
                 </h3>
                 <p className="text-sm text-blue-700 truncate max-w-full">
-                  {currentUrl}
+                  {currentUrl ? new URL(currentUrl).hostname : ""}
                 </p>
               </div>
             </div>

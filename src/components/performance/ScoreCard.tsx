@@ -32,29 +32,48 @@ const getScoreBgColor = (score: number): string => {
   return "bg-red-100";
 };
 
+/**
+ * 规范化分数，确保在0-100范围内
+ * @param rawScore 原始分数
+ * @returns 规范化后的分数
+ */
+const normalizeScore = (rawScore: number): number => {
+  // 检查是否为有效数字
+  if (isNaN(rawScore) || !isFinite(rawScore)) {
+    return 0;
+  }
+  // 限制在0-100范围内
+  return Math.max(0, Math.min(100, rawScore));
+};
+
 const ScoreCard: React.FC<ScoreCardProps> = ({
   score,
   title,
   getRating,
   t,
 }) => {
+  // 规范化输入分数
+  const normalizedScore = normalizeScore(score);
   const [displayScore, setDisplayScore] = useState(0);
 
   // 平滑动画效果
   useEffect(() => {
-    if (score <= 0) {
+    if (normalizedScore <= 0) {
       setDisplayScore(0);
       return;
     }
 
     const duration = 1000; // 动画持续时间（毫秒）
     const frames = 60; // 总帧数
-    const step = score / frames; // 每帧增加的分数
+    const step = normalizedScore / frames; // 每帧增加的分数
     let currentFrame = 0;
 
     const timer = setInterval(() => {
       currentFrame++;
-      const newScore = Math.min(Math.round(step * currentFrame), score);
+      const newScore = Math.min(
+        Math.round(step * currentFrame),
+        normalizedScore
+      );
       setDisplayScore(newScore);
 
       if (currentFrame >= frames) {
@@ -63,9 +82,9 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
     }, duration / frames);
 
     return () => clearInterval(timer);
-  }, [score]);
+  }, [normalizedScore]);
 
-  const rating = getRating(score);
+  const rating = getRating(normalizedScore);
 
   return (
     <motion.div
@@ -76,7 +95,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
     >
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-medium text-gray-700">{title}</h3>
-        <div className={`text-2xl font-bold ${getScoreColor(score)}`}>
+        <div className={`text-2xl font-bold ${getScoreColor(normalizedScore)}`}>
           {displayScore}
           <span className="text-lg">/100</span>
         </div>
@@ -86,24 +105,24 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
       <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
         <motion.div
           className={`h-2.5 rounded-full ${
-            score >= 90
+            normalizedScore >= 90
               ? "bg-green-500"
-              : score >= 70
+              : normalizedScore >= 70
               ? "bg-green-600"
-              : score >= 50
+              : normalizedScore >= 50
               ? "bg-yellow-500"
               : "bg-red-500"
           }`}
           initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
+          animate={{ width: `${normalizedScore}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         />
       </div>
 
       <div
         className={`text-sm px-2 py-1 rounded inline-block ${getScoreBgColor(
-          score
-        )} ${getScoreColor(score)}`}
+          normalizedScore
+        )} ${getScoreColor(normalizedScore)}`}
       >
         {t(rating, rating)}
       </div>

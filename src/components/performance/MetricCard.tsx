@@ -10,6 +10,39 @@ export interface MetricCardProps {
   description?: string;
 }
 
+/**
+ * 格式化显示值，处理异常值
+ * @param value 原始值
+ * @returns 格式化后的值
+ */
+const formatDisplayValue = (value: number | string): string => {
+  // 如果是字符串并且不是数字格式，直接返回
+  if (typeof value === "string" && isNaN(Number(value))) {
+    return value;
+  }
+
+  // 转换为数字处理
+  const numValue = typeof value === "string" ? Number(value) : value;
+
+  // 检查无效值
+  if (isNaN(numValue) || !isFinite(numValue)) {
+    return "0";
+  }
+
+  // 处理负数
+  if (numValue < 0) {
+    return "0";
+  }
+
+  // 处理过大的值（超过一百万显示为1M+）
+  if (numValue > 1000000) {
+    return "1M+";
+  }
+
+  // 返回原始值的字符串表示
+  return typeof value === "string" ? value : String(numValue);
+};
+
 const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
@@ -18,6 +51,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon,
   description,
 }) => {
+  // 格式化显示值
+  const displayValue = formatDisplayValue(value);
+
   // 根据状态获取颜色
   const getStatusColors = (status: "good" | "medium" | "poor") => {
     switch (status) {
@@ -67,7 +103,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-1">{title}</h3>
           <div className="flex items-baseline">
-            <span className={`text-lg font-bold ${colors.text}`}>{value}</span>
+            <span className={`text-lg font-bold ${colors.text}`}>
+              {displayValue}
+            </span>
             {unit && <span className="ml-1 text-sm text-gray-500">{unit}</span>}
           </div>
           {description && (

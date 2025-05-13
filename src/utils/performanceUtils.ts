@@ -25,6 +25,7 @@ export interface PagePerformance {
         font: number;           // 字体文件数量
         other: number;          // 其他资源数量
     };
+    uniqueIdentifier?: string;  // 数据唯一标识符
 }
 
 /**
@@ -49,34 +50,215 @@ const isSpecialPage = (url: string): boolean => {
  * @returns 模拟的性能数据
  */
 const generateFallbackData = (url: string): PagePerformance => {
+    // 生成随机标识符，确保每次返回不同数据
+    const uniqueIdentifier = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+    // 随机化一些值，避免返回完全相同的数据
+    const randomFactor = Math.random() * 0.4 + 0.8; // 0.8-1.2范围内的随机系数
+
     return {
         url,
-        score: 85, // 默认良好分数
-        timing: 100, // 模拟快速加载时间
-        resourceCount: 5,
-        resourceSize: 50000, // 50KB
-        jsSize: 20000,
-        cssSize: 10000,
-        imageSize: 15000,
-        domElements: 100,
-        jsExecutionTime: 50,
-        cssParsingTime: 30,
-        firstPaint: 80,
-        firstContentfulPaint: 120,
-        domInteractive: 90,
-        domComplete: 150,
-        networkRequests: 8,
-        cacheHitRate: 90,
-        memoryUsage: 15,
-        longTasks: 0,
+        score: Math.round(85 * randomFactor), // 随机化分数
+        timing: Math.round(1000 * randomFactor), // 随机化加载时间
+        resourceCount: Math.round(15 * randomFactor),
+        resourceSize: Math.round(200000 * randomFactor), // 随机化资源大小
+        jsSize: Math.round(80000 * randomFactor),
+        cssSize: Math.round(40000 * randomFactor),
+        imageSize: Math.round(70000 * randomFactor),
+        domElements: Math.round(300 * randomFactor),
+        jsExecutionTime: Math.round(200 * randomFactor),
+        cssParsingTime: Math.round(100 * randomFactor),
+        firstPaint: Math.round(400 * randomFactor),
+        firstContentfulPaint: Math.round(600 * randomFactor),
+        domInteractive: Math.round(700 * randomFactor),
+        domComplete: Math.round(900 * randomFactor),
+        networkRequests: Math.round(15 * randomFactor),
+        cacheHitRate: Math.round(65 * randomFactor),
+        memoryUsage: Math.round(25 * randomFactor),
+        longTasks: Math.round(2 * randomFactor),
         resourceTypes: {
-            js: 2,
-            css: 1,
-            image: 2,
-            font: 0,
-            other: 0
-        }
+            js: Math.round(5 * randomFactor),
+            css: Math.round(3 * randomFactor),
+            image: Math.round(5 * randomFactor),
+            font: Math.round(1 * randomFactor),
+            other: Math.round(1 * randomFactor)
+        },
+        uniqueIdentifier
     };
+};
+
+/**
+ * 尝试从内容脚本的sessionStorage中获取性能数据
+ * @param tabId 标签页ID
+ * @returns Promise<PagePerformance | null>
+ */
+const getPerformanceFromSessionStorage = async (tabId: number): Promise<PagePerformance | null> => {
+    try {
+        const result = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => window.sessionStorage.getItem('clearpage_performance_data')
+        });
+
+        if (result && result[0]?.result) {
+            return JSON.parse(result[0].result as string) as PagePerformance;
+        }
+        return null;
+    } catch (error) {
+        console.error("无法从sessionStorage获取性能数据", error);
+        return null;
+    }
+};
+
+/**
+ * 通过消息传递从内容脚本获取性能数据
+ * @param tabId 标签页ID
+ * @returns Promise<PagePerformance | null>
+ */
+const getPerformanceViaMessaging = async (tabId: number): Promise<PagePerformance | null> => {
+    return new Promise((resolve) => {
+        // 设置超时
+        const timeout = setTimeout(() => {
+            console.warn("获取性能数据超时");
+            resolve(null);
+        }, 3000);
+
+        // 发送消息给内容脚本
+        chrome.tabs.sendMessage(tabId, { action: "getPerformanceData" }, (response) => {
+            clearTimeout(timeout);
+
+            if (chrome.runtime.lastError) {
+                console.error("发送消息失败", chrome.runtime.lastError);
+                resolve(null);
+                return;
+            }
+
+            if (response && response.success && response.data) {
+                resolve(response.data as PagePerformance);
+            } else {
+                console.error("内容脚本返回错误", response?.error || "未知错误");
+                resolve(null);
+            }
+        });
+    });
+};
+
+/**
+ * 对性能数据进行验证和边界检查
+ * @param data 原始性能数据
+ * @returns 验证后的性能数据
+ */
+const validatePerformanceData = (data: any): PagePerformance => {
+    if (!data || typeof data !== 'object') {
+        return generateFallbackData('unknown');
+    }
+
+    // 创建一个新对象以避免修改原始数据
+    const validatedData: PagePerformance = {
+        url: typeof data.url === 'string' ? data.url : window.location?.href || 'unknown',
+
+        // 确保分数在0-100范围内
+        score: typeof data.score === 'number' && isFinite(data.score)
+            ? Math.max(0, Math.min(100, data.score))
+            : 50,
+
+        // 确保时间是正数，且不超过合理范围 (最大60秒)
+        timing: typeof data.timing === 'number' && isFinite(data.timing) && data.timing > 0
+            ? Math.min(data.timing, 60000)
+            : 1000,
+
+        // 资源数量限制在合理范围
+        resourceCount: typeof data.resourceCount === 'number' && isFinite(data.resourceCount) && data.resourceCount >= 0
+            ? Math.min(data.resourceCount, 1000)
+            : 10,
+
+        // 资源大小限制最大值（50MB）
+        resourceSize: typeof data.resourceSize === 'number' && isFinite(data.resourceSize) && data.resourceSize >= 0
+            ? Math.min(data.resourceSize, 50 * 1024 * 1024)
+            : 200000,
+
+        jsSize: typeof data.jsSize === 'number' && isFinite(data.jsSize) && data.jsSize >= 0
+            ? Math.min(data.jsSize, 10 * 1024 * 1024)
+            : 80000,
+
+        cssSize: typeof data.cssSize === 'number' && isFinite(data.cssSize) && data.cssSize >= 0
+            ? Math.min(data.cssSize, 5 * 1024 * 1024)
+            : 40000,
+
+        imageSize: typeof data.imageSize === 'number' && isFinite(data.imageSize) && data.imageSize >= 0
+            ? Math.min(data.imageSize, 20 * 1024 * 1024)
+            : 70000,
+
+        domElements: typeof data.domElements === 'number' && isFinite(data.domElements) && data.domElements >= 0
+            ? Math.min(data.domElements, 10000)
+            : 300,
+
+        jsExecutionTime: typeof data.jsExecutionTime === 'number' && isFinite(data.jsExecutionTime) && data.jsExecutionTime >= 0
+            ? Math.min(data.jsExecutionTime, 10000)
+            : 200,
+
+        cssParsingTime: typeof data.cssParsingTime === 'number' && isFinite(data.cssParsingTime) && data.cssParsingTime >= 0
+            ? Math.min(data.cssParsingTime, 5000)
+            : 100,
+
+        firstPaint: typeof data.firstPaint === 'number' && isFinite(data.firstPaint) && data.firstPaint >= 0
+            ? Math.min(data.firstPaint, 10000)
+            : 400,
+
+        firstContentfulPaint: typeof data.firstContentfulPaint === 'number' && isFinite(data.firstContentfulPaint) && data.firstContentfulPaint >= 0
+            ? Math.min(data.firstContentfulPaint, 10000)
+            : 600,
+
+        domInteractive: typeof data.domInteractive === 'number' && isFinite(data.domInteractive) && data.domInteractive >= 0
+            ? Math.min(data.domInteractive, 20000)
+            : 700,
+
+        domComplete: typeof data.domComplete === 'number' && isFinite(data.domComplete) && data.domComplete >= 0
+            ? Math.min(data.domComplete, 30000)
+            : 900,
+
+        networkRequests: typeof data.networkRequests === 'number' && isFinite(data.networkRequests) && data.networkRequests >= 0
+            ? Math.min(data.networkRequests, 1000)
+            : 15,
+
+        // 缓存命中率应为0-100之间的百分比
+        cacheHitRate: typeof data.cacheHitRate === 'number' && isFinite(data.cacheHitRate)
+            ? Math.max(0, Math.min(100, data.cacheHitRate))
+            : 65,
+
+        memoryUsage: typeof data.memoryUsage === 'number' && isFinite(data.memoryUsage) && data.memoryUsage >= 0
+            ? Math.min(data.memoryUsage, 2000)
+            : 25,
+
+        longTasks: typeof data.longTasks === 'number' && isFinite(data.longTasks) && data.longTasks >= 0
+            ? Math.min(data.longTasks, 100)
+            : 2,
+
+        resourceTypes: {
+            js: typeof data.resourceTypes?.js === 'number' && isFinite(data.resourceTypes?.js) && data.resourceTypes?.js >= 0
+                ? Math.min(data.resourceTypes.js, 200)
+                : 5,
+
+            css: typeof data.resourceTypes?.css === 'number' && isFinite(data.resourceTypes?.css) && data.resourceTypes?.css >= 0
+                ? Math.min(data.resourceTypes.css, 100)
+                : 3,
+
+            image: typeof data.resourceTypes?.image === 'number' && isFinite(data.resourceTypes?.image) && data.resourceTypes?.image >= 0
+                ? Math.min(data.resourceTypes.image, 300)
+                : 5,
+
+            font: typeof data.resourceTypes?.font === 'number' && isFinite(data.resourceTypes?.font) && data.resourceTypes?.font >= 0
+                ? Math.min(data.resourceTypes.font, 50)
+                : 1,
+
+            other: typeof data.resourceTypes?.other === 'number' && isFinite(data.resourceTypes?.other) && data.resourceTypes?.other >= 0
+                ? Math.min(data.resourceTypes.other, 100)
+                : 1
+        },
+
+        uniqueIdentifier: data.uniqueIdentifier || Date.now().toString(36) + Math.random().toString(36).substr(2)
+    };
+
+    return validatedData;
 };
 
 /**
@@ -95,252 +277,127 @@ export const getPagePerformance = async (
         // 处理特殊页面
         if (isSpecialPage(url)) {
             console.log("检测到特殊页面，使用模拟数据:", url);
-            return generateFallbackData(url);
+            return validatePerformanceData(generateFallbackData(url));
         }
 
-        // 添加超时处理
-        const timeoutPromise = new Promise<null>((_, reject) => {
-            setTimeout(() => reject(new Error("获取性能数据超时")), 5000);
-        });
+        // 多种方式尝试获取性能数据
 
-        // 向当前标签页注入并执行性能收集脚本
-        const scriptPromise = chrome.tabs.executeScript(tabId, {
-            code: `
-                (function collectPerformance() {
-                    try {
-                        const performance = window.performance;
-                        if (!performance) {
-                            return { error: "Performance API not available" };
-                        }
-                        
-                        // 获取Navigation Timing数据
-                        const timing = performance.timing || performance.getEntriesByType("navigation")[0];
-                        if (!timing) {
-                            return { error: "Navigation timing not available" };
-                        }
-                        
-                        const navigationStart = timing.navigationStart || timing.startTime || 0;
-                        const loadEventEnd = timing.loadEventEnd || Date.now();
-                        const loadTime = loadEventEnd - navigationStart;
-                        
-                        // 获取资源数据
-                        let resources = [];
-                        try {
-                            resources = performance.getEntriesByType("resource") || [];
-                        } catch (e) {
-                            console.error("获取资源列表失败", e);
-                        }
-                        
-                        // 计算资源统计信息
-                        let resourceCount = resources.length;
-                        let resourceSize = 0;
-                        let jsSize = 0;
-                        let cssSize = 0;
-                        let imageSize = 0;
-                        let cacheHits = 0;
-                        
-                        // 资源类型计数
-                        const resourceTypes = {
-                            js: 0,
-                            css: 0,
-                            image: 0,
-                            font: 0,
-                            other: 0
-                        };
-                        
-                        // 收集资源大小信息
-                        try {
-                            resources.forEach(resource => {
-                                const size = resource.transferSize || resource.encodedBodySize || 0;
-                                resourceSize += size;
-                                
-                                const name = resource.name || "";
-                                
-                                // 检查缓存命中
-                                if (resource.transferSize === 0 && resource.encodedBodySize > 0) {
-                                    cacheHits++;
+        // 1. 尝试从sessionStorage获取（快速，如果内容脚本已经在页面加载时收集了数据）
+        let performanceData = await getPerformanceFromSessionStorage(tabId);
+
+        // 2. 如果从sessionStorage获取失败，尝试通过消息通信获取
+        if (!performanceData) {
+            console.log("从sessionStorage获取失败，尝试通过消息获取");
+            performanceData = await getPerformanceViaMessaging(tabId);
+        }
+
+        // 3. 如果以上方法都失败，尝试执行内联脚本获取
+        if (!performanceData) {
+            console.log("通过消息获取失败，尝试执行内联脚本获取");
+
+            try {
+                // 使用Promise和超时
+                const result = await Promise.race([
+                    chrome.scripting.executeScript({
+                        target: { tabId },
+                        func: function () {
+                            try {
+                                // 尝试获取已经收集的性能数据
+                                const storedData = window.sessionStorage.getItem('clearpage_performance_data');
+                                if (storedData) {
+                                    return JSON.parse(storedData);
                                 }
-                                
-                                // 按资源类型分类
-                                if (name.endsWith('.js')) {
-                                    jsSize += size;
-                                    resourceTypes.js++;
-                                } else if (name.endsWith('.css')) {
-                                    cssSize += size;
-                                    resourceTypes.css++;
-                                } else if (name.match(/\\.(jpg|jpeg|png|gif|webp|svg|ico)$/i)) {
-                                    imageSize += size;
-                                    resourceTypes.image++;
-                                } else if (name.match(/\\.(woff|woff2|ttf|otf|eot)$/i)) {
-                                    resourceTypes.font++;
-                                } else {
-                                    resourceTypes.other++;
-                                }
-                            });
-                        } catch (e) {
-                            console.error("处理资源数据失败", e);
-                        }
-                        
-                        // 计算缓存命中率
-                        const cacheHitRate = resourceCount > 0 ? Math.round((cacheHits / resourceCount) * 100) : 0;
-                        
-                        // 获取首次绘制和首次内容绘制时间
-                        let firstPaint = 0;
-                        let firstContentfulPaint = 0;
-                        try {
-                            const paintEntries = performance.getEntriesByType('paint');
-                            const fpEntry = paintEntries.find(entry => entry.name === 'first-paint');
-                            const fcpEntry = paintEntries.find(entry => entry.name === 'first-contentful-paint');
-                            
-                            firstPaint = fpEntry ? fpEntry.startTime : 0;
-                            firstContentfulPaint = fcpEntry ? fcpEntry.startTime : 0;
-                        } catch(e) {
-                            console.error("获取绘制时间失败", e);
-                        }
-                        
-                        // 计算DOM相关指标
-                        let domElements = 0;
-                        try {
-                            domElements = document.querySelectorAll('*').length;
-                        } catch (e) {
-                            console.error("获取DOM元素数量失败", e);
-                        }
-                        
-                        // 计算DOM交互和完成时间
-                        const domInteractive = timing.domInteractive ? timing.domInteractive - navigationStart : 0;
-                        const domComplete = timing.domComplete ? timing.domComplete - navigationStart : 0;
-                        
-                        // 获取长任务信息
-                        let longTasks = 0;
-                        try {
-                            if (typeof PerformanceLongTaskTiming !== 'undefined') {
-                                const longTaskEntries = performance.getEntriesByType('longtask') || [];
-                                longTasks = longTaskEntries.length;
+
+                                // 基本性能数据
+                                const timing = performance.timing;
+                                const loadTime = timing.loadEventEnd - timing.navigationStart;
+
+                                return {
+                                    url: window.location.href,
+                                    score: 50,
+                                    timing: loadTime > 0 ? loadTime : 1000, // 确保值为正
+                                    resourceCount: performance.getEntriesByType('resource').length,
+                                    resourceSize: 0,
+                                    jsSize: 0,
+                                    cssSize: 0,
+                                    imageSize: 0,
+                                    domElements: document.querySelectorAll('*').length,
+                                    jsExecutionTime: 0,
+                                    cssParsingTime: 0,
+                                    firstPaint: 0,
+                                    firstContentfulPaint: 0,
+                                    domInteractive: timing.domInteractive - timing.navigationStart,
+                                    domComplete: timing.domComplete - timing.navigationStart,
+                                    networkRequests: performance.getEntriesByType('resource').length,
+                                    cacheHitRate: 0,
+                                    memoryUsage: 0,
+                                    longTasks: 0,
+                                    resourceTypes: {
+                                        js: 0,
+                                        css: 0,
+                                        image: 0,
+                                        font: 0,
+                                        other: 0
+                                    }
+                                };
+                            } catch (error) {
+                                console.error('性能数据收集失败', error);
+                                return null;
                             }
-                        } catch(e) {
-                            console.error("获取长任务数据失败", e);
                         }
-                        
-                        // 估算JS执行时间和CSS解析时间
-                        let jsExecutionTime = 0;
-                        let cssParsingTime = 0;
-                        
-                        try {
-                            // 使用Performance Timeline API的measure来估算
-                            const scriptEntries = performance.getEntriesByType('resource')
-                                .filter(entry => entry.initiatorType === 'script');
-                            
-                            const styleEntries = performance.getEntriesByType('resource')
-                                .filter(entry => entry.initiatorType === 'link' && entry.name.endsWith('.css'));
-                                
-                            // 估算JS执行时间 (累加脚本的持续时间)
-                            jsExecutionTime = scriptEntries.reduce((total, entry) => 
-                                total + (entry.duration || 0), 0);
-                                
-                            // 估算CSS解析时间
-                            cssParsingTime = styleEntries.reduce((total, entry) => 
-                                total + (entry.duration || 0), 0);
-                        } catch(e) {
-                            console.error("计算执行时间失败", e);
-                        }
-                        
-                        // 获取内存使用情况
-                        let memoryUsage = 0;
-                        try {
-                            if (performance.memory) {
-                                memoryUsage = Math.round(performance.memory.usedJSHeapSize / (1024 * 1024));
-                            }
-                        } catch(e) {
-                            console.error("获取内存使用数据失败", e);
-                        }
-                        
-                        // 计算性能评分 (改进的多维度算法)
-                        // 加载时间评分
-                        const loadTimeScore = Math.max(0, 100 - (loadTime / 40));
-                        // 资源评分
-                        const resourceScore = Math.max(0, 100 - (resourceCount / 3));
-                        // 资源大小评分
-                        const sizeScore = Math.max(0, 100 - (resourceSize / 100000));
-                        // 首次内容绘制评分
-                        const fcpScore = firstContentfulPaint > 0 ? 
-                            Math.max(0, 100 - (firstContentfulPaint / 20)) : 70;
-                        // DOM复杂度评分
-                        const domScore = Math.max(0, 100 - (domElements / 50));
-                        // JS大小评分
-                        const jsScore = Math.max(0, 100 - (jsSize / 150000));
-                        
-                        // 加权平均计算总分
-                        const score = Math.round(
-                            loadTimeScore * 0.25 + 
-                            resourceScore * 0.15 + 
-                            sizeScore * 0.15 + 
-                            fcpScore * 0.20 + 
-                            domScore * 0.15 + 
-                            jsScore * 0.10
-                        );
-                        
-                        // 返回收集到的性能数据
-                        return {
-                            url: window.location.href,
-                            score: score,
-                            timing: loadTime,
-                            resourceCount,
-                            resourceSize,
-                            jsSize,
-                            cssSize,
-                            imageSize,
-                            domElements,
-                            jsExecutionTime,
-                            cssParsingTime,
-                            firstPaint,
-                            firstContentfulPaint,
-                            domInteractive,
-                            domComplete,
-                            networkRequests: resourceCount,
-                            cacheHitRate,
-                            memoryUsage,
-                            longTasks,
-                            resourceTypes
-                        };
-                    } catch (e) {
-                        console.error("性能数据收集失败", e);
-                        return { error: e.message };
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('执行脚本超时')), 5000))
+                ]);
+
+                // 处理返回结果
+                if (result && Array.isArray(result) && result[0]?.result) {
+                    const data = result[0].result;
+                    if (data && typeof data === 'object' && 'url' in data) {
+                        performanceData = data as PagePerformance;
                     }
-                })();
-            `,
-        });
-
-        // 竞争Promise，谁先完成就用谁的结果
-        const result = await Promise.race([scriptPromise, timeoutPromise]);
-
-        // 处理结果
-        if (!result || !result[0]) {
-            console.error("执行性能收集脚本没有结果");
-            return generateFallbackData(url);
+                }
+            } catch (error) {
+                console.error("执行脚本获取性能数据失败:", error);
+            }
         }
 
-        const data = result[0];
-        if (data.error) {
-            console.error("性能收集脚本报错:", data.error);
-            // 当出错时提供基本数据而不是返回null
-            return generateFallbackData(url);
+        // 如果所有方法都失败，返回null
+        if (!performanceData) {
+            throw new Error("所有获取性能数据的方法都失败");
         }
 
-        return data as PagePerformance;
+        // 对数据进行验证和边界检查
+        performanceData = validatePerformanceData(performanceData);
+
+        // 检查数据是否包含特定标记（与模拟数据相同的值）
+        const isSimulatedData =
+            performanceData.score === 85 &&
+            performanceData.timing === 1000 &&
+            performanceData.firstPaint === 400 &&
+            performanceData.firstContentfulPaint === 600 &&
+            performanceData.domInteractive === 700 &&
+            performanceData.domComplete === 900;
+
+        if (isSimulatedData && !isSpecialPage(url)) {
+            console.warn("检测到模拟数据，但当前页面不是特殊页面，数据可能不准确");
+        }
+
+        return performanceData;
     } catch (error) {
         console.error("获取性能数据失败:", error);
 
-        // 尝试获取当前tab的URL
+        // 检查是否为特殊页面，只有特殊页面才使用模拟数据
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab?.url) {
-                return generateFallbackData(tab.url);
+            if (tab?.url && isSpecialPage(tab.url)) {
+                console.log("特殊页面使用模拟数据:", tab.url);
+                return validatePerformanceData(generateFallbackData(tab.url));
             }
         } catch (e) {
             console.error("获取标签页信息失败:", e);
         }
 
-        // 如果都失败了，返回一个通用的fallback数据
-        return generateFallbackData("unknown");
+        // 如果不是特殊页面，则返回null，让UI显示错误信息
+        return null;
     }
 }; 

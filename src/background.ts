@@ -16,6 +16,9 @@ interface CleaningRule {
 // 监听安装事件
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Cache Clearer 插件已安装');
+
+    // 不需要重复注册内容脚本，已在manifest.json中声明
+    // chrome.scripting.registerContentScripts 可能会与manifest中的声明冲突
 });
 
 // 从存储中加载清理规则
@@ -116,12 +119,21 @@ const clearDataForDomain = async (domain: string, dataTypes: DataType[]): Promis
 
 // 监听消息
 chrome.runtime.onMessage.addListener((
-    request: { type: string; payload: { domain: string; dataTypes: string[]; since?: number } },
+    request: {
+        type?: string;
+        action?: string;
+        payload?: {
+            domain: string;
+            dataTypes: string[];
+            since?: number
+        };
+        tabId?: number;
+    },
     sender,
     sendResponse
 ) => {
     if (request.type === 'CLEAR_CACHE') {
-        const { domain, dataTypes, since } = request.payload;
+        const { domain, dataTypes, since } = request.payload || { domain: '', dataTypes: [], since: 0 };
 
         // 记录开始时间
         const startTime = Date.now();
@@ -213,4 +225,37 @@ chrome.runtime.onMessage.addListener((
 
         return true;
     }
+
+    if (request.action === "getPerformanceData") {
+        // 转发请求给正确的内容脚本
+        const targetTabId = request.tabId;
+
+        if (!targetTabId) {
+            sendResponse({ success: false, error: "无效的标签页ID" });
+            return true;
+        }
+
+        // 转发消息给目标内容脚本
+        chrome.tabs.sendMessage(
+            targetTabId,
+            { action: "getPerformanceData" },
+            (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("发送消息到内容脚本失败:", chrome.runtime.lastError);
+                    sendResponse({
+                        success: false,
+                        error: chrome.runtime.lastError.message || "无法与内容脚本通信"
+                    });
+                    return;
+                }
+
+                // 将内容脚本的响应转发回popup
+                sendResponse(response);
+            }
+        );
+
+        return true; // 保持消息通道打开以进行异步响应
+    }
+
+    return false; // 如果没有处理消息，返回false
 });
