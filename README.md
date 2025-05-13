@@ -131,6 +131,8 @@ MIT License
 
 - ✨ 新增清除单个网站域名的历史记录功能
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yangyuan-zhen/ClearPage)
+
 ## ⭐ Star 历史
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yangyuan-zhen/ClearPage&type=Date)](https://star-history.com/#yangyuan-zhen/ClearPage&Date)
