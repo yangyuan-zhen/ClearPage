@@ -141,6 +141,8 @@ MIT License
 - ✨ Added page performance detection tool
 - 🐛 Fixed refresh issue after clearing Service Workers
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yangyuan-zhen/ClearPage)
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yangyuan-zhen/ClearPage&type=Date)](https://star-history.com/#yangyuan-zhen/ClearPage&Date)
