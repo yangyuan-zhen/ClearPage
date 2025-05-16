@@ -3,14 +3,16 @@
  */
 
 // 添加必要的类型定义
-interface PerformanceResourceDetails extends PerformanceResourceTiming {
+interface PerformanceResourceDetails {
+    name?: string;
+    initiatorType?: string;
     transferSize?: number;
     encodedBodySize?: number;
     decodedBodySize?: number;
-    initiatorType?: string;
+    duration?: number;
 }
 
-interface NavigationEntryDetails extends PerformanceNavigationTiming {
+interface NavigationEntryDetails {
     startTime?: number;
     responseEnd?: number;
     domInteractive?: number;
@@ -150,10 +152,10 @@ function collectPerformanceData() {
     try {
         // 筛选脚本和样式资源
         const scriptEntries = resources.filter(entry =>
-            entry.initiatorType === "script" || entry.name.endsWith(".js"));
+            entry.initiatorType === "script" || (entry.name && entry.name.endsWith(".js")));
 
         const styleEntries = resources.filter(entry =>
-            entry.initiatorType === "link" && entry.name.endsWith(".css"));
+            entry.initiatorType === "link" && entry.name && entry.name.endsWith(".css"));
 
         // 累加执行和解析时间
         jsExecutionTime = scriptEntries.reduce((total, entry) =>
