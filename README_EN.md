@@ -18,7 +18,7 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 
 ## 📸 Product Screenshot
 
-![Product Screenshot](./2.png)
+![Product Screenshot](public/2.png)
 
 ## 🔧 Data Types Supported
 
