@@ -16,6 +16,10 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 - 📱 Optimized layout design for better visual experience
 - ⏱️ Custom cleaning rules and scheduled cleaning
 
+## 📸 Product Screenshot
+
+![Product Screenshot](./2.png)
+
 ## 🔧 Data Types Supported
 
 - Website cache
