@@ -36,6 +36,7 @@ const CacheClearButton: React.FC = () => {
     useState<boolean>(false);
   const [isCleaningComplete, setIsCleaningComplete] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"standard" | "smart">("smart");
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true); // 是否自动刷新页面
 
   // 数据类型选项
   const dataTypeOptions: {
@@ -287,17 +288,22 @@ const CacheClearButton: React.FC = () => {
     try {
       const startTime = performance.now();
 
-      // 依次清理每种类型的数据
+      // 使用一个请求清理所有选中的缓存类型
+      const result = await clearDomainCache({
+        domain: currentDomain,
+        dataTypes: selectedTypes as any, // 临时类型转换，因为 DataType 在这个组件中是 string 类型
+        autoRefresh: autoRefresh, // 添加自动刷新选项
+      });
+
+      // 处理需要自定义处理的类型
       for (const dataType of selectedTypes) {
+        // 这些类型已经在clearDomainCache中处理过了
+        if (["cache", "cookies", "localStorage"].includes(dataType)) {
+          continue;
+        }
+
+        // 处理其他特殊类型
         switch (dataType) {
-          case "cache":
-          case "cookies":
-          case "localStorage":
-            await clearDomainCache({
-              domain: currentDomain,
-              dataTypes: [dataType],
-            });
-            break;
           case "indexedDB":
             await clearIndexedDB(currentDomain);
             break;
@@ -316,6 +322,11 @@ const CacheClearButton: React.FC = () => {
           default:
             console.warn(`未知的数据类型: ${dataType}`);
         }
+      }
+
+      // 如果已经自动刷新了，添加到消息中
+      if (result?.refreshedCount && result.refreshedCount > 0) {
+        console.log(`已自动刷新 ${result.refreshedCount} 个标签页`);
       }
 
       const endTime = performance.now();
@@ -442,6 +453,30 @@ const CacheClearButton: React.FC = () => {
               >
                 {showRecommendations ? t("hide", "隐藏") : t("show", "显示")}
               </button>
+            </div>
+
+            {/* 自动刷新开关 */}
+            <div className="flex items-center mt-2 p-1 border-t border-gray-100">
+              <input
+                type="checkbox"
+                id="auto-refresh"
+                className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+              />
+              <label
+                htmlFor="auto-refresh"
+                className="ml-2 text-xs text-gray-700"
+              >
+                {t("auto_refresh", "清理后自动刷新页面")}
+              </label>
+              <div className="ml-auto">
+                <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                  {autoRefresh
+                    ? t("enabled", "已启用")
+                    : t("disabled", "已禁用")}
+                </span>
+              </div>
             </div>
 
             {showRecommendations && (

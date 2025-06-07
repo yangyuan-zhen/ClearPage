@@ -1,5 +1,28 @@
-// 导入类型
+// 导入服务模块
+import {
+    clearBrowserData,
+    loadRules,
+    saveRules,
+    CleaningRule as ClearRule,
+    getPagePerformanceMetrics,
+    configureLogger,
+    info,
+    warn,
+    error,
+    LogLevel,
+    Timer,
+    initializeServices
+} from './services';
 import { DataType } from './types';
+
+// 初始化和配置服务
+initializeServices();
+
+// 配置日志服务
+configureLogger({
+    logLevel: process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
+    enableConsole: true
+});
 
 // 清理规则接口定义
 interface CleaningRule {
@@ -15,107 +38,79 @@ interface CleaningRule {
 
 // 监听安装事件
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('Cache Clearer 插件已安装');
+    info('Cache Clearer 插件已安装');
 
     // 不需要重复注册内容脚本，已在manifest.json中声明
     // chrome.scripting.registerContentScripts 可能会与manifest中的声明冲突
 });
 
-// 从存储中加载清理规则
-const loadRules = async (): Promise<CleaningRule[]> => {
-    const data = await chrome.storage.sync.get("cleaningRules");
-    return data.cleaningRules || [];
-};
-
-// 保存规则到存储
-const saveRules = async (rules: CleaningRule[]): Promise<void> => {
-    await chrome.storage.sync.set({ cleaningRules: rules });
-};
-
-// 清理指定域名的数据
-const clearDataForDomain = async (domain: string, dataTypes: DataType[]): Promise<boolean> => {
+// 检查并运行自动清理规则
+async function checkAndRunAutomaticRules(): Promise<void> {
     try {
-        // 定义支持域名过滤的类型
-        const originSupportedTypes: DataType[] = ['cookies', 'localStorage'];
-        const originFiltered = dataTypes.filter(type => originSupportedTypes.includes(type));
+        const rules = await loadRules();
+        const now = Date.now();
+        const automaticRules = rules.filter(rule => rule.isEnabled && rule.isAutomatic);
 
-        // 定义不支持域名过滤的类型（需全局清除）
-        const globalTypes: DataType[] = ['cache', 'serviceWorkers', 'indexedDB', 'sessionStorage', 'webSQL', 'formData', 'fileSystem'];
-        const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
+        for (const rule of automaticRules) {
+            // 检查是否需要执行清理
+            if (shouldRunCleaningRule(rule, now)) {
+                info(`运行自动清理规则: ${rule.name}`);
 
-        // 使用批处理方式清理数据，避免一次性处理过多数据导致浏览器卡顿
-        const batchSize = 2; // 每批处理的数据类型数量
-        const clearResults = [];
-
-        // 处理支持域名过滤的类型（分批处理）
-        if (originFiltered.length > 0) {
-            // 将数据类型分批
-            for (let i = 0; i < originFiltered.length; i += batchSize) {
-                const batch = originFiltered.slice(i, i + batchSize);
-
-                const removalOptions: chrome.browsingData.RemovalOptions = {
-                    since: 0,
-                    origins: domain.includes('*')
-                        ? undefined
-                        : [`https://${domain}`, `http://${domain}`]
-                };
-
-                const dataTypeOptions: chrome.browsingData.DataTypeSet = {};
-                batch.forEach(type => {
-                    if (type === 'cookies') dataTypeOptions.cookies = true;
-                    if (type === 'localStorage') dataTypeOptions.localStorage = true;
+                // 执行清理
+                const timer = new Timer(`清理规则: ${rule.name}`);
+                const result = await clearBrowserData(rule.dataTypes, {
+                    domain: rule.domain,
+                    autoRefresh: true // 启用自动刷新
                 });
+                const elapsed = timer.stop();
 
-                // 使用Promise处理每一批
-                const batchPromise = chrome.browsingData.remove(removalOptions, dataTypeOptions);
-                clearResults.push(batchPromise);
+                if (result.success) {
+                    info(`自动清理完成: ${rule.name}`, { timeUsed: elapsed });
 
-                // 在批次之间添加短暂延迟，避免浏览器卡顿
-                await new Promise(resolve => setTimeout(resolve, 50));
+                    // 更新上次清理时间
+                    rule.lastCleanTime = now;
+                    await saveRules(rules);
+                } else {
+                    error(`自动清理失败: ${rule.name}`, result.error);
+                }
             }
         }
-
-        // 处理不支持域名过滤的类型（分批处理）
-        if (globalFiltered.length > 0) {
-            // 将数据类型分批
-            for (let i = 0; i < globalFiltered.length; i += batchSize) {
-                const batch = globalFiltered.slice(i, i + batchSize);
-
-                const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
-                    since: 0
-                };
-
-                const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {};
-                batch.forEach(type => {
-                    if (type === 'cache') globalDataTypeOptions.cache = true;
-                    if (type === 'serviceWorkers') globalDataTypeOptions.serviceWorkers = true;
-                    if (type === 'indexedDB') globalDataTypeOptions.indexedDB = true;
-                    if (type === 'webSQL') globalDataTypeOptions.webSQL = true;
-                    if (type === 'formData') globalDataTypeOptions.formData = true;
-                    if (type === 'fileSystem') globalDataTypeOptions.fileSystems = true;
-                    if (type === 'sessionStorage') {
-                        // sessionStorage 需要特殊处理，因为Chrome API不直接支持
-                        // 这里我们会在后续代码中处理
-                    }
-                });
-
-                // 使用Promise处理每一批
-                const batchPromise = chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions);
-                clearResults.push(batchPromise);
-
-                // 在批次之间添加短暂延迟，避免浏览器卡顿
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-        }
-
-        // 等待所有清理任务完成
-        await Promise.all(clearResults);
-        return true;
-    } catch (error) {
-        console.error("清理数据失败:", error);
-        return false;
+    } catch (err) {
+        error('执行自动清理规则时出错', err);
     }
-};
+}
+
+/**
+ * 判断是否应该执行清理规则
+ * @param rule 清理规则
+ * @param currentTime 当前时间戳
+ * @returns 是否应该执行
+ */
+function shouldRunCleaningRule(rule: ClearRule, currentTime: number): boolean {
+    // 如果没有设置上次清理时间，则应该执行
+    if (!rule.lastCleanTime) return true;
+
+    const lastCleanTime = rule.lastCleanTime;
+    const timeDiff = currentTime - lastCleanTime;
+
+    // 根据频率确定是否执行
+    switch (rule.frequency) {
+        case 'daily':
+            return timeDiff >= 24 * 60 * 60 * 1000; // 24小时
+        case 'weekly':
+            return timeDiff >= 7 * 24 * 60 * 60 * 1000; // 7天
+        case 'monthly':
+            return timeDiff >= 30 * 24 * 60 * 60 * 1000; // 30天
+        default:
+            return false;
+    }
+}
+
+// 定期检查自动规则
+setInterval(checkAndRunAutomaticRules, 60 * 60 * 1000); // 每小时检查一次
+
+// 启动时也检查一次
+checkAndRunAutomaticRules();
 
 // 监听消息
 chrome.runtime.onMessage.addListener((
@@ -124,110 +119,52 @@ chrome.runtime.onMessage.addListener((
         action?: string;
         payload?: {
             domain: string;
-            dataTypes: string[];
-            since?: number
+            dataTypes: DataType[];
+            since?: number;
+            autoRefresh?: boolean;
         };
         tabId?: number;
     },
     sender,
     sendResponse
 ) => {
+    // 清理缓存请求
     if (request.type === 'CLEAR_CACHE') {
-        const { domain, dataTypes, since } = request.payload || { domain: '', dataTypes: [], since: 0 };
+        const { domain, dataTypes, since, autoRefresh = true } = request.payload || { domain: '', dataTypes: [], since: 0, autoRefresh: true };
 
-        // 记录开始时间
-        const startTime = Date.now();
+        info('收到清理缓存请求', { domain, dataTypes, autoRefresh });
 
-        // 使用Web Workers处理复杂的清理任务（如果可能的话）
-        const processDataClear = async () => {
-            try {
-                // 定义支持域名过滤的类型
-                const originSupportedTypes = ['cookies', 'localStorage'];
-                const originFiltered = dataTypes.filter(type => originSupportedTypes.includes(type));
+        // 记录开始时间并执行清理
+        const timer = new Timer('缓存清理');
 
-                // 定义不支持域名过滤的类型（需全局清除）
-                const globalTypes = ['cache', 'serviceWorkers', 'indexedDB', 'sessionStorage', 'webSQL', 'formData', 'fileSystem'];
-                const globalFiltered = dataTypes.filter(type => globalTypes.includes(type));
+        // 异步执行清理任务
+        clearBrowserData(dataTypes, { domain, since, autoRefresh }).then(async result => {
+            const elapsed = timer.stop();
 
-                // 使用批处理方式清理数据
-                const batchSize = 2; // 每批处理的数据类型数量
-                const clearResults = [];
-
-                // 处理支持域名过滤的类型（分批处理）
-                if (originFiltered.length > 0) {
-                    // 将数据类型分批
-                    for (let i = 0; i < originFiltered.length; i += batchSize) {
-                        const batch = originFiltered.slice(i, i + batchSize);
-
-                        const removalOptions: chrome.browsingData.RemovalOptions = {
-                            since: since || 0,
-                            origins: domain ? [`https://${domain}`, `http://${domain}`] : undefined
-                        };
-
-                        const dataTypeOptions: chrome.browsingData.DataTypeSet = {};
-                        batch.forEach(type => {
-                            if (type === 'cookies') dataTypeOptions.cookies = true;
-                            if (type === 'localStorage') dataTypeOptions.localStorage = true;
-                        });
-
-                        // 使用Promise处理每一批
-                        const batchPromise = chrome.browsingData.remove(removalOptions, dataTypeOptions);
-                        clearResults.push(batchPromise);
-
-                        // 在批次之间添加短暂延迟，避免浏览器卡顿
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-                }
-
-                // 处理不支持域名过滤的类型（分批处理）
-                if (globalFiltered.length > 0) {
-                    // 将数据类型分批
-                    for (let i = 0; i < globalFiltered.length; i += batchSize) {
-                        const batch = globalFiltered.slice(i, i + batchSize);
-
-                        const globalRemovalOptions: chrome.browsingData.RemovalOptions = {
-                            since: since || 0
-                        };
-
-                        const globalDataTypeOptions: chrome.browsingData.DataTypeSet = {};
-                        batch.forEach(type => {
-                            if (type === 'cache') globalDataTypeOptions.cache = true;
-                            if (type === 'serviceWorkers') globalDataTypeOptions.serviceWorkers = true;
-                            if (type === 'indexedDB') globalDataTypeOptions.indexedDB = true;
-                            if (type === 'webSQL') globalDataTypeOptions.webSQL = true;
-                            if (type === 'formData') globalDataTypeOptions.formData = true;
-                            if (type === 'fileSystem') globalDataTypeOptions.fileSystems = true;
-                        });
-
-                        // 使用Promise处理每一批
-                        if (Object.keys(globalDataTypeOptions).length > 0) {
-                            const batchPromise = chrome.browsingData.remove(globalRemovalOptions, globalDataTypeOptions);
-                            clearResults.push(batchPromise);
-                        }
-
-                        // 在批次之间添加短暂延迟，避免浏览器卡顿
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-                }
-
-                // 等待所有清理任务完成
-                await Promise.all(clearResults);
-
-                return { success: true, timeUsed: Date.now() - startTime };
-            } catch (error) {
-                console.error("清理数据失败:", error);
-                return { success: false, error: error instanceof Error ? error.message : "未知错误" };
+            if (result.success) {
+                info('清理缓存完成，自动刷新相关页面', {
+                    timeUsed: elapsed,
+                    refreshedCount: result.refreshedCount || 0
+                });
+            } else {
+                error('清理缓存失败', result.error);
             }
-        };
 
-        // 执行清理并发送响应
-        processDataClear().then(sendResponse);
+            sendResponse({
+                success: result.success,
+                timeUsed: elapsed,
+                error: result.error,
+                refreshed: result.refreshedCount && result.refreshedCount > 0,
+                refreshedCount: result.refreshedCount || 0
+            });
+        });
 
+        // 返回true表示稍后会调用sendResponse
         return true;
     }
 
+    // 获取性能数据请求
     if (request.action === "getPerformanceData") {
-        // 转发请求给正确的内容脚本
         const targetTabId = request.tabId;
 
         if (!targetTabId) {
@@ -235,27 +172,29 @@ chrome.runtime.onMessage.addListener((
             return true;
         }
 
-        // 转发消息给目标内容脚本
-        chrome.tabs.sendMessage(
-            targetTabId,
-            { action: "getPerformanceData" },
-            (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("发送消息到内容脚本失败:", chrome.runtime.lastError);
-                    sendResponse({
-                        success: false,
-                        error: chrome.runtime.lastError.message || "无法与内容脚本通信"
-                    });
-                    return;
+        info('收到获取性能数据请求', { tabId: targetTabId });
+
+        // 获取性能数据并响应
+        getPagePerformanceMetrics(targetTabId)
+            .then(metrics => {
+                if (metrics) {
+                    sendResponse({ success: true, data: metrics });
+                } else {
+                    sendResponse({ success: false, error: "无法获取性能数据" });
                 }
+            })
+            .catch(err => {
+                error('获取性能数据失败', err);
+                sendResponse({
+                    success: false,
+                    error: err instanceof Error ? err.message : "未知错误"
+                });
+            });
 
-                // 将内容脚本的响应转发回popup
-                sendResponse(response);
-            }
-        );
-
-        return true; // 保持消息通道打开以进行异步响应
+        // 返回true表示稍后会调用sendResponse
+        return true;
     }
 
-    return false; // 如果没有处理消息，返回false
+    // 其他消息类型
+    return false;
 });

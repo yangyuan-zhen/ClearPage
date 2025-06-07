@@ -720,7 +720,7 @@ const SettingsPanel: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900">
                   ClearPage 浏览器插件
                 </h2>
-                <p className="text-sm text-gray-600">版本 1.0.9</p>
+                <p className="text-sm text-gray-600">版本 1.0.10</p>
               </div>
             </div>
 
