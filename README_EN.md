@@ -7,14 +7,16 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 ## ✨ Key Features
 
 - 🎯 Precisely clean cache data for current website
-- 🔄 Automatically refresh page after cleaning
-- ⚠️ Security prompts before clearing sensitive data
-- 💡 Smart cleaning recommendations with auto-apply
-- 📊 Automatic website performance detection
+- 🛡️ **Whitelist Protection** - One-click to protect Cookies of frequently used websites
+- 📊 **Space Estimation** - Real-time display of estimated storage space to be freed
+- 🔒 Confirmation dialog before clearing sensitive data
+- ⚡ **Quick Access** - Click to clean immediately without scrolling
+- 🔄 Optional auto-refresh current page
+- 💪 Deep clean and quick clean modes
 - 🌐 Multilingual support (English/Chinese)
-- 🎨 Clean and intuitive user interface
-- 📱 Optimized layout design for better visual experience
-- ⏱️ Custom cleaning rules and scheduled cleaning
+- 🎨 Modern gradient design with hidden scrollbars
+- 📈 Integrated performance detection to track optimization results
+- ⏱️ Custom cleaning rules with instant execution
 
 ## 📸 Product Screenshot
 
@@ -100,6 +102,34 @@ MIT License
 
 ## 📅 Change Log
 
+### 2025-11-06
+
+**Major Update v1.0.11 - Comprehensive Optimization**
+
+#### Core Features
+
+- 🛡️ **New Whitelist Protection** - One-click to protect frequently used website Cookies, solving re-login issues
+- 📊 **New Space Estimation** - Real-time display of estimated storage space to be freed (MB/GB)
+- ⚡ **New Layout Design** - Cleaning button at top, click immediately without scrolling
+- 💪 **Quick/Deep Clean Modes** - One-click switch between basic and complete cleaning
+
+#### User Experience
+
+- ✨ Simplified cleaning workflow, removed smart recommendations for full user control
+- 🔒 Added confirmation dialog for sensitive data cleaning to prevent mistakes
+- 🔄 Auto-refresh now defaults to off and only refreshes current tab (no other tabs affected)
+- 👀 Hidden all scrollbars for cleaner interface
+- 🎨 Completely redesigned UI with gradients, shadows, and modern animations
+- 🎯 Added "Execute Now" button for settings panel rules
+
+#### Technical Fixes
+
+- 🔧 Fixed React 18 compatibility issue, upgraded to createRoot API
+- 🔧 Fixed TypeScript type definition errors
+- ⚡ Optimized component rendering performance, removed unnecessary forced re-renders
+- ❌ Removed scheduled automatic cleaning to prevent accidental logout
+- 📦 Unified version to 1.0.11
+
 ### 2025-05-10
 
 - ✨ Implemented automatic performance detection when switching to performance tab
@@ -109,7 +139,6 @@ MIT License
 ### 2025-05-03
 
 - ✨ Added custom cleaning rules feature for creating and managing rules
-- 🚀 Implemented scheduled automatic cleaning with daily, weekly, monthly options
 - 🔄 Optimized interface navigation with tab-based switching
 
 ### 2025-04-25

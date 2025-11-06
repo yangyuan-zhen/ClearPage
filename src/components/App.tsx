@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import CacheClearButton from "./CacheClearButton";
 import PerformancePanel from "./PerformancePanel";
 import SettingsPanel from "./SettingsPanel";
@@ -13,28 +13,10 @@ const App: React.FC = () => {
   // 性能面板的key，用于控制重新渲染
   const [performancePanelKey, setPerformancePanelKey] = useState<number>(0);
 
-  // 导航项key，用于控制导航重新渲染
-  const [navKey, setNavKey] = useState<string>("initial");
-
   // 使用i18n钩子
   const { currentLang, t, switchLanguage } = useI18n();
 
-  // 强制重新渲染所有组件
-  const forceUpdate = useCallback(() => {
-    console.log("强制更新组件，当前语言:", currentLang);
-    // 使用随机数确保每次都会触发组件的重新渲染
-    const randomKey = Math.random().toString(36).substring(7);
-    setPerformancePanelKey((prevKey) => prevKey + 1);
-    setNavKey(randomKey);
-  }, [currentLang]);
-
-  // 语言变化时重新渲染组件
-  useEffect(() => {
-    // 仅在语言变化时强制重新渲染
-    forceUpdate();
-  }, [currentLang, forceUpdate]);
-
-  // 定义导航项 - 确保每次语言变化时更新
+  // 定义导航项
   const navItems = React.useMemo(
     () => [
       {
@@ -101,7 +83,7 @@ const App: React.FC = () => {
         ),
       },
     ],
-    [currentLang, t]
+    [t]
   );
 
   // 打开落地页的函数
@@ -122,16 +104,16 @@ const App: React.FC = () => {
     <div className="flex h-full min-h-[500px] min-w-[800px] max-w-[800px] bg-white">
       {/* 侧边栏导航 */}
       <div className="flex flex-col w-64 bg-gray-100 border-r border-gray-200">
-        <div className="p-4 border-b border-gray-200" key={`header-${navKey}`}>
+        <div className="p-4 border-b border-gray-200">
           <h1 className="text-lg font-bold text-primary">
             {t("appTitle", "网页清理工具")}
           </h1>
         </div>
 
-        <nav className="flex-1 px-3 mt-6" key={`nav-${navKey}`}>
+        <nav className="flex-1 px-3 mt-6">
           <ul className="space-y-2">
             {navItems.map((item) => (
-              <li key={`${item.id}-${navKey}`}>
+              <li key={item.id}>
                 <button
                   onClick={() =>
                     handleTabChange(
@@ -181,7 +163,7 @@ const App: React.FC = () => {
           </div>
 
           {/* 关于插件按钮 */}
-          <div className="px-1 mt-8" key={`about-${navKey}`}>
+          <div className="px-1 mt-8">
             <button
               onClick={openLandingPage}
               className="flex items-center w-full px-4 py-2.5 text-sm font-medium border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
@@ -206,7 +188,7 @@ const App: React.FC = () => {
       </div>
 
       {/* 主内容区域 */}
-      <main className="overflow-y-auto flex-1" key={`main-${navKey}`}>
+      <main className="overflow-y-auto flex-1">
         <div className="p-6">
           {/* 页面标题 */}
           <div className="mb-6">
@@ -231,17 +213,11 @@ const App: React.FC = () => {
 
           {/* 根据激活的标签页显示不同组件 */}
           <div className="p-5 bg-white rounded-lg border border-gray-100 shadow-sm">
-            {activeTab === "clean" && (
-              <CacheClearButton key={`cache-${currentLang}`} />
-            )}
+            {activeTab === "clean" && <CacheClearButton />}
             {activeTab === "performance" && (
-              <PerformancePanel
-                key={`performance-${currentLang}-${performancePanelKey}`}
-              />
+              <PerformancePanel key={performancePanelKey} />
             )}
-            {activeTab === "settings" && (
-              <SettingsPanel key={`settings-${currentLang}`} />
-            )}
+            {activeTab === "settings" && <SettingsPanel />}
           </div>
         </div>
       </main>

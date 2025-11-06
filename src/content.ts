@@ -145,26 +145,16 @@ function collectPerformanceData() {
     // 获取DOM元素数量
     const domElements = document.querySelectorAll("*").length;
 
-    // 获取JavaScript执行时间和CSS解析时间
-    let jsExecutionTime = 0;
-    let cssParsingTime = 0;
-
+    // 获取 Largest Contentful Paint (LCP)
+    let largestContentfulPaint = 0;
     try {
-        // 筛选脚本和样式资源
-        const scriptEntries = resources.filter(entry =>
-            entry.initiatorType === "script" || (entry.name && entry.name.endsWith(".js")));
-
-        const styleEntries = resources.filter(entry =>
-            entry.initiatorType === "link" && entry.name && entry.name.endsWith(".css"));
-
-        // 累加执行和解析时间
-        jsExecutionTime = scriptEntries.reduce((total, entry) =>
-            total + (entry.duration || 0), 0);
-
-        cssParsingTime = styleEntries.reduce((total, entry) =>
-            total + (entry.duration || 0), 0);
+        const lcpEntries = performance.getEntriesByType("largest-contentful-paint");
+        if (lcpEntries.length > 0) {
+            const lastLCP = lcpEntries[lcpEntries.length - 1];
+            largestContentfulPaint = lastLCP.startTime;
+        }
     } catch (e) {
-        console.error("计算执行时间失败", e);
+        console.error("获取LCP失败", e);
     }
 
     // 获取内存使用情况
@@ -188,34 +178,89 @@ function collectPerformanceData() {
         console.error("获取长任务数据失败", e);
     }
 
-    // 计算性能评分
-    // 加载时间评分 (低于3秒为满分，超过10秒为0分)
-    const loadTimeScore = Math.max(0, 100 - (loadTime / 75));
+    // 计算性能评分 - 参考 Google Lighthouse 标准
+    
+    // 1. FCP 评分 (First Contentful Paint)
+    // 优秀: <1800ms, 良好: <3000ms, 需改进: >3000ms
+    let fcpScore = 0;
+    if (firstContentfulPaint > 0) {
+        if (firstContentfulPaint < 1800) {
+            fcpScore = 100 - (firstContentfulPaint / 18);
+        } else if (firstContentfulPaint < 3000) {
+            fcpScore = 50 - ((firstContentfulPaint - 1800) / 24);
+        } else {
+            fcpScore = Math.max(0, 50 - ((firstContentfulPaint - 3000) / 60));
+        }
+    } else {
+        fcpScore = 50; // 如果无法获取，给中等分数
+    }
 
-    // 资源数量评分 (少于30个为满分，超过100个为0分)
-    const resourceCountScore = Math.max(0, 100 - (resourceCount / 2));
+    // 2. LCP 评分 (Largest Contentful Paint)
+    let lcpScore = 0;
+    if (largestContentfulPaint > 0) {
+        if (largestContentfulPaint < 2500) {
+            lcpScore = 100 - (largestContentfulPaint / 25);
+        } else if (largestContentfulPaint < 4000) {
+            lcpScore = 50 - ((largestContentfulPaint - 2500) / 30);
+        } else {
+            lcpScore = Math.max(0, 50 - ((largestContentfulPaint - 4000) / 80));
+        }
+    } else {
+        // 如果没有 LCP，使用 loadTime 代替
+        if (loadTime < 3000) {
+            lcpScore = 100 - (loadTime / 30);
+        } else if (loadTime < 5000) {
+            lcpScore = 50 - ((loadTime - 3000) / 40);
+        } else {
+            lcpScore = Math.max(0, 50 - ((loadTime - 5000) / 100));
+        }
+    }
 
-    // 资源大小评分 (小于1MB为满分，大于10MB为0分)
-    const resourceSizeScore = Math.max(0, 100 - (resourceSize / 100000));
+    // 3. 资源大小评分
+    // 优秀: <1MB, 良好: <3MB, 需改进: >3MB
+    let sizeScore = 0;
+    const resourceMB = resourceSize / (1024 * 1024);
+    if (resourceMB < 1) {
+        sizeScore = 100;
+    } else if (resourceMB < 3) {
+        sizeScore = 100 - ((resourceMB - 1) * 25);
+    } else {
+        sizeScore = Math.max(0, 50 - ((resourceMB - 3) * 10));
+    }
 
-    // 首次内容绘制评分 (低于1秒为满分，高于3秒为0分)
-    const fcpScore = firstContentfulPaint > 0 ?
-        Math.max(0, 100 - (firstContentfulPaint / 30)) : 70;
+    // 4. 资源数量评分
+    // 优秀: <25, 良好: <50, 需改进: >50
+    let countScore = 0;
+    if (resourceCount < 25) {
+        countScore = 100;
+    } else if (resourceCount < 50) {
+        countScore = 100 - ((resourceCount - 25) * 2);
+    } else {
+        countScore = Math.max(0, 50 - ((resourceCount - 50) * 0.5));
+    }
 
-    // DOM复杂度评分 (少于500元素为满分，超过5000个为0分)
-    const domScore = Math.max(0, 100 - (domElements / 100));
+    // 5. DOM 复杂度评分
+    // 优秀: <800, 良好: <1500, 需改进: >1500
+    let domScore = 0;
+    if (domElements < 800) {
+        domScore = 100;
+    } else if (domElements < 1500) {
+        domScore = 100 - ((domElements - 800) / 7);
+    } else {
+        domScore = Math.max(0, 50 - ((domElements - 1500) / 35));
+    }
 
-    // JS执行时间评分
-    const jsScore = Math.max(0, 100 - (jsExecutionTime / 10));
+    // 6. 缓存利用率评分
+    let cacheScore = Math.min(100, cacheHitRate * 1.2);
 
-    // 加权计算最终评分
+    // 综合评分（参考 Lighthouse 权重）
     const score = Math.round(
-        loadTimeScore * 0.25 +
-        resourceCountScore * 0.15 +
-        resourceSizeScore * 0.15 +
-        fcpScore * 0.20 +
-        domScore * 0.15 +
-        jsScore * 0.10
+        fcpScore * 0.15 +        // FCP 15%
+        lcpScore * 0.30 +        // LCP/加载时间 30% (最重要)
+        sizeScore * 0.20 +       // 资源大小 20%
+        countScore * 0.15 +      // 资源数量 15%
+        domScore * 0.10 +        // DOM复杂度 10%
+        cacheScore * 0.10        // 缓存利用 10%
     );
 
     // 生成唯一标识符，确保不是模拟数据
@@ -232,10 +277,9 @@ function collectPerformanceData() {
         cssSize,
         imageSize,
         domElements,
-        jsExecutionTime,
-        cssParsingTime,
         firstPaint,
         firstContentfulPaint,
+        largestContentfulPaint, // 添加 LCP
         domInteractive: domInteractiveTime,
         domComplete: domCompleteTime,
         networkRequests: resourceCount,

@@ -1,8 +1,8 @@
 import { clearDomainCache } from '../cacheUtils';
 
 // 模拟chrome API
-if (!global.chrome) {
-    global.chrome = {
+if (!(globalThis as any).chrome) {
+    (globalThis as any).chrome = {
         runtime: {
             sendMessage: jest.fn(),
         }
@@ -39,7 +39,9 @@ describe('cacheUtils', () => {
             payload: {
                 domain: 'example.com',
                 dataTypes: ['cache'],
-                since: 0  // 应该是0，表示清除所有缓存
+                since: 0,  // 应该是0，表示清除所有缓存
+                autoRefresh: true,
+                whitelist: []
             }
         });
     });

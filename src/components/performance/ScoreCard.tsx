@@ -88,16 +88,20 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
 
   return (
     <motion.div
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+      className="bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-md border-2 border-gray-200 p-4 hover:shadow-xl transition-all duration-200"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      whileHover={{ scale: 1.02 }}
     >
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-medium text-gray-700">{title}</h3>
-        <div className={`text-2xl font-bold ${getScoreColor(normalizedScore)}`}>
+        <h3 className="font-semibold text-gray-800 flex items-center">
+          <span className="mr-2">🎯</span>
+          {title}
+        </h3>
+        <div className={`text-3xl font-bold ${getScoreColor(normalizedScore)}`}>
           {displayScore}
-          <span className="text-lg">/100</span>
+          <span className="text-lg text-gray-500">/100</span>
         </div>
       </div>
 
@@ -120,7 +124,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
       </div>
 
       <div
-        className={`text-sm px-2 py-1 rounded inline-block ${getScoreBgColor(
+        className={`text-sm px-3 py-1.5 rounded-full inline-block font-medium ${getScoreBgColor(
           normalizedScore
         )} ${getScoreColor(normalizedScore)}`}
       >

@@ -1,6 +1,6 @@
 {
   "name": "browser-cache-clearer-plugin",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "description": "浏览器缓存清理插件",
   "main": "src/index.tsx",
   "scripts": {

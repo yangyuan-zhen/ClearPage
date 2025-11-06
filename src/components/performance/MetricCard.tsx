@@ -92,26 +92,36 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <motion.div
-      className={`${colors.bg} ${colors.border} border rounded-lg p-3 hover:shadow-md transition-shadow duration-200`}
+      className={`${colors.bg} ${colors.border} border-2 rounded-lg p-3 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -3, scale: 1.02 }}
     >
-      <div className="flex items-start">
-        {icon && <div className={`${colors.icon} text-xl mr-2`}>{icon}</div>}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-1">{title}</h3>
-          <div className="flex items-baseline">
-            <span className={`text-lg font-bold ${colors.text}`}>
-              {displayValue}
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xs font-medium text-gray-700 truncate flex-1">
+            {title}
+          </h3>
+          {icon && (
+            <span className={`${colors.icon} text-base ml-1 flex-shrink-0`}>
+              {icon}
             </span>
-            {unit && <span className="ml-1 text-sm text-gray-500">{unit}</span>}
-          </div>
-          {description && (
-            <p className="text-xs text-gray-500 mt-1">{description}</p>
           )}
         </div>
+        <div className="flex items-baseline">
+          <span className={`text-lg font-bold ${colors.text} truncate`}>
+            {displayValue}
+          </span>
+          {unit && (
+            <span className="ml-1 text-xs text-gray-500 flex-shrink-0">
+              {unit}
+            </span>
+          )}
+        </div>
+        {description && (
+          <p className="text-xs text-gray-500 mt-0.5 truncate">{description}</p>
+        )}
       </div>
     </motion.div>
   );

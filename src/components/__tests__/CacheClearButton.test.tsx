@@ -4,8 +4,8 @@ import CacheClearButton from "../CacheClearButton";
 import { clearDomainCache } from "../../utils/cacheUtils";
 
 // 模拟fetch API如果在测试环境中不可用
-if (typeof global.fetch !== "function") {
-  global.fetch = jest.fn().mockImplementation((url) => {
+if (typeof globalThis.fetch !== "function") {
+  (globalThis as any).fetch = jest.fn().mockImplementation((url) => {
     if (url.includes("zh_CN.json")) {
       return Promise.resolve({
         ok: true,
@@ -44,8 +44,8 @@ if (typeof global.fetch !== "function") {
 }
 
 // 模拟chrome API
-if (!global.chrome) {
-  global.chrome = {
+if (!(globalThis as any).chrome) {
+  (globalThis as any).chrome = {
     runtime: {
       getURL: jest.fn(
         (path) => `chrome-extension://abcdefghijklmnopqrstuvwxyz/${path}`

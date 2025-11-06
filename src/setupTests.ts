@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 
 // Mock chrome API
-global.chrome = {
+(globalThis as any).chrome = {
     runtime: {
         onInstalled: {
             addListener: jest.fn(),
@@ -19,7 +19,13 @@ global.chrome = {
     browsingData: {
         remove: jest.fn().mockImplementation(() => Promise.resolve()),
     },
-} as any;
+    storage: {
+        sync: {
+            get: jest.fn().mockImplementation(() => Promise.resolve({})),
+            set: jest.fn().mockImplementation(() => Promise.resolve()),
+        },
+    },
+};
 
 // 清除所有 mock 的实现
 beforeEach(() => {

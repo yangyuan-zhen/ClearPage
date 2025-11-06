@@ -2,10 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "../utils/i18n";
 import { clearDomainCache } from "../utils/cacheUtils";
 import {
-  getSmartCleaningRecommendations,
-  getCleaningAdvice,
-} from "../utils/cleaningRecommendations";
-import {
   clearIndexedDB,
   clearSessionStorage,
   clearWebSQL,
@@ -29,14 +25,12 @@ const CacheClearButton: React.FC = () => {
     "cache",
     "cookies",
   ]);
-  const [recommendations, setRecommendations] = useState<DataType[]>([]);
-  const [cleaningAdvice, setCleaningAdvice] = useState<string>("");
-  const [showRecommendations, setShowRecommendations] = useState<boolean>(true);
-  const [isRecommendationApplied, setIsRecommendationApplied] =
-    useState<boolean>(false);
   const [isCleaningComplete, setIsCleaningComplete] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"standard" | "smart">("smart");
-  const [autoRefresh, setAutoRefresh] = useState<boolean>(true); // 是否自动刷新页面
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [whitelist, setWhitelist] = useState<string[]>([]);
+  const [estimatedSize, setEstimatedSize] = useState<number>(0);
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false); // 是否显示高级选项
 
   // 数据类型选项
   const dataTypeOptions: {
@@ -101,30 +95,7 @@ const CacheClearButton: React.FC = () => {
     sensitiveDataTypes.includes(type)
   );
 
-  // 检查选择是否与推荐一致
-  const checkIfRecommendationApplied = (
-    selected: DataType[],
-    recommended: DataType[]
-  ): boolean => {
-    if (recommended.length === 0) {
-      return false;
-    }
-    return (
-      recommended.every((type) => selected.includes(type)) &&
-      selected.every((type) => recommended.includes(type))
-    );
-  };
-
-  // 当选择改变时检查是否与推荐一致
-  useEffect(() => {
-    if (recommendations.length > 0) {
-      setIsRecommendationApplied(
-        checkIfRecommendationApplied(selectedTypes, recommendations)
-      );
-    }
-  }, [selectedTypes, recommendations]);
-
-  // 获取当前域名
+  // 获取当前域名和预估空间
   useEffect(() => {
     const getCurrentTab = async () => {
       const [tab] = await chrome.tabs.query({
@@ -134,106 +105,46 @@ const CacheClearButton: React.FC = () => {
       if (tab?.url) {
         const url = new URL(tab.url);
         setCurrentDomain(url.hostname);
-        // 获取智能清理建议
-        getRecommendationsForDomain(url.hostname);
       }
     };
 
+    // 加载白名单
+    const loadWhitelist = async () => {
+      const data = await chrome.storage.sync.get("cookieWhitelist");
+      setWhitelist(data.cookieWhitelist || []);
+    };
+
     getCurrentTab();
+    loadWhitelist();
   }, []);
 
-  // 为指定域名获取推荐
-  const getRecommendationsForDomain = (domain: string) => {
-    try {
-      // 使用现有的推荐系统获取清理建议
-      const smartRecommendations = getSmartCleaningRecommendations(domain);
-      setRecommendations(smartRecommendations);
+  // 预估可释放的存储空间
+  const estimateClearingSize = () => {
+    let estimatedBytes = 0;
 
-      // 获取适合当前域名的清理建议说明文本
-      const advice = getCustomCleaningAdvice(domain, smartRecommendations);
-      setCleaningAdvice(advice);
-
-      // 确保至少包含基本缓存
-      if (!smartRecommendations.includes("cache")) {
-        smartRecommendations.push("cache");
-      }
-
-      console.log("为", domain, "生成智能清理建议：", smartRecommendations);
-
-      // 自动应用智能建议到复选框选择中
-      setSelectedTypes([...smartRecommendations]);
-      // 设置推荐已应用的状态
-      setIsRecommendationApplied(true);
-    } catch (error) {
-      console.error("生成智能建议失败", error);
-      // 出错时设置默认值
-      setRecommendations(["cache", "cookies"]);
-
-      // 设置默认的清理建议文本
-      setCleaningAdvice(
-        currentLang === "zh_CN"
-          ? "已为您选择基本的缓存和Cookies清理。"
-          : "Basic cache and cookies cleaning has been selected for you."
-      );
+    if (selectedTypes.includes("cache")) {
+      estimatedBytes += 50 * 1024 * 1024; // 缓存 ~50MB
     }
+    if (selectedTypes.includes("cookies") && !isInWhitelist) {
+      estimatedBytes += 500 * 1024; // Cookies ~500KB
+    }
+    if (selectedTypes.includes("localStorage")) {
+      estimatedBytes += 5 * 1024 * 1024; // localStorage ~5MB
+    }
+    if (selectedTypes.includes("indexedDB")) {
+      estimatedBytes += 20 * 1024 * 1024; // IndexedDB ~20MB
+    }
+    if (selectedTypes.includes("sessionStorage")) {
+      estimatedBytes += 2 * 1024 * 1024; // sessionStorage ~2MB
+    }
+
+    setEstimatedSize(estimatedBytes);
   };
 
-  // 自定义清理建议文本，确保多语言支持
-  const getCustomCleaningAdvice = (
-    domain: string,
-    recommendedTypes: DataType[]
-  ): string => {
-    // 视频网站
-    if (
-      domain.includes("youtube") ||
-      domain.includes("bilibili") ||
-      domain.includes("iqiyi") ||
-      domain.includes("netflix")
-    ) {
-      return currentLang === "zh_CN"
-        ? "视频网站通常缓存大量媒体文件，清理这些缓存可以释放大量存储空间。"
-        : "Video sites typically cache large media files. Cleaning these caches can free up significant storage space.";
-    }
-
-    // 社交媒体网站
-    if (
-      domain.includes("weibo") ||
-      domain.includes("facebook") ||
-      domain.includes("twitter") ||
-      domain.includes("instagram")
-    ) {
-      return currentLang === "zh_CN"
-        ? "社交媒体网站存储了大量的个人信息和浏览历史，清理这些数据有助于保护您的隐私并释放存储空间。"
-        : "Social media sites store a lot of personal information and browsing history. Cleaning this data helps protect your privacy and free up storage space.";
-    }
-
-    // 购物网站
-    if (
-      domain.includes("amazon") ||
-      domain.includes("taobao") ||
-      domain.includes("jd") ||
-      domain.includes("tmall")
-    ) {
-      return currentLang === "zh_CN"
-        ? "已保留购物网站的登录状态，仅清理不必要的缓存数据以加快页面加载速度。"
-        : "Login state for shopping sites has been preserved, only clearing unnecessary cache data to speed up page loading.";
-    }
-
-    // 默认建议
-    const typesCount = recommendedTypes.length;
-    return currentLang === "zh_CN"
-      ? `根据分析，建议清理该网站的${typesCount}种数据类型，这将有助于提升浏览性能和保护隐私。`
-      : `Based on analysis, it's recommended to clean ${typesCount} types of data from this site, which will help improve browsing performance and protect privacy.`;
-  };
-
-  // 监听语言变化，更新清理建议文本
+  // 当选择改变时重新估算
   useEffect(() => {
-    if (currentDomain && recommendations.length > 0) {
-      // 当语言变化时，重新生成清理建议文本
-      const advice = getCustomCleaningAdvice(currentDomain, recommendations);
-      setCleaningAdvice(advice);
-    }
-  }, [currentLang, currentDomain, recommendations]);
+    estimateClearingSize();
+  }, [selectedTypes, whitelist]);
 
   // 处理数据类型选择
   const handleTypeSelect = (type: DataType) => {
@@ -242,48 +153,13 @@ const CacheClearButton: React.FC = () => {
     );
   };
 
-  // 应用推荐
-  const applyRecommendations = () => {
-    if (recommendations.length > 0) {
-      // 重置所有选择，然后应用建议
-      setSelectedTypes([...recommendations]);
-
-      // 显示应用成功的反馈
-      const successMessage =
-        currentLang === "zh_CN"
-          ? "已应用建议的数据类型"
-          : "Recommended data types applied";
-
-      // 创建临时消息提示
-      const oldMessage = message;
-      setMessage(successMessage);
-      setTimeout(() => {
-        // 如果消息未被其他操作更改，则清空它
-        setMessage((currentMsg) =>
-          currentMsg === successMessage ? "" : currentMsg
-        );
-      }, 2000);
-
-      // 设置推荐已应用的状态
-      setIsRecommendationApplied(true);
-    }
-  };
-
-  // 处理数据清理
-  const handleClearCache = async () => {
-    if (selectedTypes.length === 0) {
-      setMessage(
-        currentLang === "zh_CN"
-          ? "请至少选择一种数据类型"
-          : "Please select at least one data type"
-      );
-      return;
-    }
-
+  // 处理数据清理（实际执行）
+  const executeClearing = async () => {
     setIsLoading(true);
     setMessage(currentLang === "zh_CN" ? "正在清理..." : "Cleaning...");
     setIsCleaningComplete(false);
     setClearTime(null);
+    setShowConfirm(false);
 
     try {
       const startTime = performance.now();
@@ -291,18 +167,17 @@ const CacheClearButton: React.FC = () => {
       // 使用一个请求清理所有选中的缓存类型
       const result = await clearDomainCache({
         domain: currentDomain,
-        dataTypes: selectedTypes as any, // 临时类型转换，因为 DataType 在这个组件中是 string 类型
-        autoRefresh: autoRefresh, // 添加自动刷新选项
+        dataTypes: selectedTypes as any,
+        autoRefresh: autoRefresh,
+        whitelist: whitelist, // 传递白名单
       });
 
       // 处理需要自定义处理的类型
       for (const dataType of selectedTypes) {
-        // 这些类型已经在clearDomainCache中处理过了
         if (["cache", "cookies", "localStorage"].includes(dataType)) {
           continue;
         }
 
-        // 处理其他特殊类型
         switch (dataType) {
           case "indexedDB":
             await clearIndexedDB(currentDomain);
@@ -319,25 +194,19 @@ const CacheClearButton: React.FC = () => {
           case "fileSystem":
             await clearFileSystem(currentDomain);
             break;
-          default:
-            console.warn(`未知的数据类型: ${dataType}`);
         }
       }
 
-      // 如果已经自动刷新了，添加到消息中
-      if (result?.refreshedCount && result.refreshedCount > 0) {
-        console.log(`已自动刷新 ${result.refreshedCount} 个标签页`);
-      }
-
       const endTime = performance.now();
-      setClearTime(Math.round(endTime - startTime));
+      const timeUsed = Math.round(endTime - startTime);
+      setClearTime(timeUsed);
       setIsCleaningComplete(true);
 
       // 清理完成后的消息
       setMessage(
         currentLang === "zh_CN"
-          ? "清理成功！页面数据已被清除。"
-          : "Cleaned successfully! Page data has been cleared."
+          ? `清理成功！已释放约 ${formatBytes(estimatedSize)} 空间`
+          : `Cleaned successfully! Freed approximately ${formatBytes(estimatedSize)}`
       );
     } catch (error) {
       console.error("清理缓存失败", error);
@@ -351,18 +220,30 @@ const CacheClearButton: React.FC = () => {
     }
   };
 
-  // 切换显示/隐藏推荐
-  const toggleRecommendations = () => {
-    setShowRecommendations((prev) => !prev);
+  // 处理清理按钮点击
+  const handleClearCache = async () => {
+    if (selectedTypes.length === 0) {
+      setMessage(
+        currentLang === "zh_CN"
+          ? "请至少选择一种数据类型"
+          : "Please select at least one data type"
+      );
+      return;
+    }
+
+    // 如果有敏感数据且不在白名单中，显示确认对话框
+    if (hasSensitiveData && !isInWhitelist) {
+      setShowConfirm(true);
+    } else {
+      executeClearing();
+    }
   };
 
   // 选择所有或基本类型
   const handleSelectAll = (isBasic = false) => {
     if (isBasic) {
-      // 基本类型: 缓存和cookies
       setSelectedTypes(["cache", "cookies"]);
     } else {
-      // 全选
       setSelectedTypes(dataTypeOptions.map((opt) => opt.value));
     }
   };
@@ -371,322 +252,325 @@ const CacheClearButton: React.FC = () => {
   const getFriendlySiteName = (domain: string): string => {
     if (!domain) return currentLang === "zh_CN" ? "当前网站" : "Current site";
 
-    // 移除www.前缀和子域名
     const baseDomain = domain
       .replace(/^www\./, "")
       .split(".")
       .slice(-2)
       .join(".");
 
-    // 添加网站名称映射
     const siteNameMap: Record<string, string> = {
       "google.com": "Google",
       "facebook.com": "Facebook",
       "youtube.com": "YouTube",
       "amazon.com": "Amazon",
+      "bilibili.com": "哔哩哔哩",
     };
 
     return siteNameMap[baseDomain] || baseDomain;
   };
 
-  // 修复智能清理标签文本
-  const standardLabel = t("advancedCleaning", "高级清理");
-  const smartLabel = t("smartCleaning", "智能清理");
+  // 格式化文件大小
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
+
+  // 切换白名单
+  const toggleWhitelist = async (domain: string) => {
+    const newWhitelist = whitelist.includes(domain)
+      ? whitelist.filter((d) => d !== domain)
+      : [...whitelist, domain];
+
+    setWhitelist(newWhitelist);
+    await chrome.storage.sync.set({ cookieWhitelist: newWhitelist });
+  };
+
+  // 检查当前域名是否在白名单中
+  const isInWhitelist = whitelist.includes(currentDomain);
 
   return (
-    <div className="p-3 relative overflow-hidden">
-      {/* 网站信息和清理状态 - 减小内边距和外边距 */}
-      <div className="mb-3 p-3 bg-blue-50 rounded-lg flex items-center text-blue-700 overflow-hidden">
-        <div className="mr-2 text-xl">ℹ️</div>
-        <div className="flex-1 truncate">
-          {t("cleaning_data_for", "正在清理数据：")}{" "}
-          <strong>{getFriendlySiteName(currentDomain)}</strong>
+    <div className="overflow-hidden relative p-4">
+      {/* 网站信息卡片 */}
+      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-l-4 border-blue-500 shadow-md">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center flex-1 truncate">
+            <span className="mr-3 text-2xl">🌐</span>
+            <div className="truncate">
+              <h3 className="font-semibold text-blue-900">
+                {getFriendlySiteName(currentDomain)}
+              </h3>
+              <p className="text-xs text-blue-700 truncate">{currentDomain}</p>
+            </div>
+          </div>
+
+          {/* 白名单保护按钮 */}
+          {selectedTypes.includes("cookies") && (
+            <button
+              onClick={() => toggleWhitelist(currentDomain)}
+              className={`ml-3 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 shadow-md ${
+                isInWhitelist
+                  ? "bg-green-500 text-white hover:bg-green-600 hover:shadow-lg"
+                  : "bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:bg-green-50"
+              }`}
+            >
+              <span className="text-lg">🛡️</span>
+              <span>{isInWhitelist ? t("protected", "已保护") : t("protect_login", "保护登录")}</span>
+            </button>
+          )}
+        </div>
+
+        {/* 预估释放空间 */}
+        <div className="flex items-center justify-between pt-3 border-t border-blue-200">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-blue-700">
+              📊 {t("will_free_space", "将释放约")}:
+            </span>
+            <span className="text-lg font-bold text-blue-900">
+              {formatBytes(estimatedSize)}
+            </span>
+          </div>
+          
+          {isInWhitelist && (
+            <div className="text-xs px-3 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200 font-medium flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+              </svg>
+              <span>{t("login_protected_desc", "登录已保护，清理时将保留 Cookies")}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 标签切换 - 减小下边距 */}
-      <div className="mb-2 border-b border-gray-200 overflow-hidden">
-        <ul className="flex flex-wrap -mb-px text-sm font-medium text-center">
-          <li className="mr-2">
-            <button
-              className={`inline-block p-3 rounded-t-lg ${
-                activeTab === "smart"
-                  ? "active text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-              onClick={() => setActiveTab("smart")}
-            >
-              {smartLabel}
-            </button>
-          </li>
-          <li className="mr-2">
-            <button
-              className={`inline-block p-3 rounded-t-lg ${
-                activeTab === "standard"
-                  ? "active text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-              onClick={() => setActiveTab("standard")}
-            >
-              {standardLabel}
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      {/* 标签内容 */}
-      {activeTab === "smart" ? (
-        <div
-          className="smart-cleaning-panel overflow-hidden"
-          key={`smart-panel-${currentLang}`}
-        >
-          {/* 智能清理说明 - 减小内外边距 */}
-          <div className="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-            <div className="flex items-center mb-1">
-              <span className="text-base mr-1 flex-shrink-0">💡</span>
-              <h3 className="font-semibold text-sm truncate">
-                {t("smart_recommendation", "智能推荐")}
-              </h3>
-              <button
-                className="ml-auto text-blue-600 text-xs hover:underline flex-shrink-0"
-                onClick={toggleRecommendations}
-              >
-                {showRecommendations ? t("hide", "隐藏") : t("show", "显示")}
-              </button>
-            </div>
-
-            {/* 自动刷新开关 */}
-            <div className="flex items-center mt-2 p-1 border-t border-gray-100">
-              <input
-                type="checkbox"
-                id="auto-refresh"
-                className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-              />
-              <label
-                htmlFor="auto-refresh"
-                className="ml-2 text-xs text-gray-700"
-              >
-                {t("auto_refresh", "清理后自动刷新页面")}
-              </label>
-              <div className="ml-auto">
-                <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
-                  {autoRefresh
-                    ? t("enabled", "已启用")
-                    : t("disabled", "已禁用")}
-                </span>
-              </div>
-            </div>
-
-            {showRecommendations && (
-              <div
-                className="text-gray-600 text-xs mt-1 overflow-hidden"
-                key={`advice-${currentLang}`}
-              >
-                <p className="break-words">{cleaningAdvice}</p>
-              </div>
-            )}
-          </div>
-
-          {/* 建议选中的数据类型 - 减小外边距和内部间距 */}
-          <div
-            className="mb-3 overflow-hidden"
-            key={`recommended-types-${currentLang}`}
-          >
-            <div className="flex justify-between items-center mb-1">
-              <h3 className="font-medium text-gray-700 text-sm truncate">
-                {t("recommended_data_types", "建议清理的数据类型")}
-              </h3>
-              <button
-                className={`text-xs flex-shrink-0 ${
-                  isRecommendationApplied
-                    ? "text-green-600"
-                    : "text-blue-600 hover:underline"
-                }`}
-                onClick={applyRecommendations}
-                disabled={isRecommendationApplied}
-              >
-                {isRecommendationApplied
-                  ? t("recommendation_applied", "已应用")
-                  : t("apply_recommendation", "应用建议")}
-              </button>
-            </div>
-
-            <div className="mt-2 flex flex-wrap gap-1 overflow-hidden">
-              {/* 只显示推荐的数据类型 */}
-              {dataTypeOptions
-                .filter((option) => recommendations.includes(option.value))
-                .map((option) => (
-                  <div key={option.value}>
-                    <label
-                      htmlFor={`smart-${option.value}`}
-                      className={`flex p-1.5 px-2.5 rounded-full text-xs cursor-pointer transition-colors whitespace-nowrap ${
-                        selectedTypes.includes(option.value)
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      } ${
-                        recommendations.includes(option.value)
-                          ? "border border-blue-300"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        id={`smart-${option.value}`}
-                        value={option.value}
-                        checked={selectedTypes.includes(option.value)}
-                        onChange={() => handleTypeSelect(option.value)}
-                        className="sr-only"
-                      />
-                      <span>{option.label}</span>
-                      {recommendations.includes(option.value) && (
-                        <span className="ml-1 text-blue-700">✓</span>
-                      )}
-                    </label>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="standard-cleaning-panel overflow-hidden">
-          {/* 高级清理数据类型选择 */}
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <h3 className="font-medium text-gray-700 text-sm truncate">
-                {t("select_data_types", "选择要清理的数据类型")}
-              </h3>
-              <div className="flex-shrink-0">
-                <button
-                  className="text-xs text-blue-600 hover:underline mr-2"
-                  onClick={() => handleSelectAll(true)}
-                >
-                  {t("select_basic", "选择基本项")}
-                </button>
-                <button
-                  className="text-xs text-blue-600 hover:underline"
-                  onClick={() => handleSelectAll(false)}
-                >
-                  {t("select_all", "全选")}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 mt-2 overflow-hidden">
-              {dataTypeOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={`p-2 rounded-lg border ${
-                    selectedTypes.includes(option.value)
-                      ? "border-blue-300 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <label className="flex items-start cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value={option.value}
-                      checked={selectedTypes.includes(option.value)}
-                      onChange={() => handleTypeSelect(option.value)}
-                      className="mt-0.5 h-3 w-3 text-blue-600 rounded flex-shrink-0"
-                    />
-                    <div className="ml-2 min-w-0">
-                      <div className="font-medium text-xs truncate">
-                        {option.label}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5 break-words">
-                        {option.description}
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 清理按钮部分 - 减小上边距 */}
-      <div className="mt-3 flex flex-col overflow-hidden">
-        {/* 结果或警告消息 */}
-        {message && (
-          <div
-            className={`mb-2 p-2 rounded-lg text-sm overflow-hidden ${
-              message.includes("成功") || message.includes("success")
-                ? "bg-green-100 text-green-800"
-                : message.includes("错误") || message.includes("error")
-                ? "bg-red-100 text-red-800"
-                : "bg-blue-100 text-blue-800"
-            }`}
-          >
-            <p className="break-words">{message}</p>
-          </div>
-        )}
-
-        {/* 敏感数据提示 - 减小外边距和内边距 */}
-        {hasSensitiveData && !isCleaningComplete && (
-          <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-xs overflow-hidden">
-            <div className="flex items-start">
-              <span className="text-sm mr-1 flex-shrink-0">⚠️</span>
-              <p className="break-words">
+      {/* 确认对话框 */}
+      {showConfirm && (
+        <div className="mb-4 p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500 shadow-md">
+          <div className="flex items-start mb-3">
+            <span className="flex-shrink-0 mr-2 text-2xl">⚠️</span>
+            <div className="flex-1">
+              <h4 className="font-semibold text-orange-900 mb-1">
+                {t("confirm_cleaning", "确认清理")}
+              </h4>
+              <p className="text-sm text-orange-800 leading-relaxed">
                 {t(
-                  "sensitive_data_warning",
-                  "您选择了包含敏感数据的类型。清理后可能需要重新登录此网站。"
+                  "confirm_sensitive_data",
+                  "您即将清理包含敏感数据的内容，这可能导致您需要重新登录此网站。确定要继续吗？"
                 )}
               </p>
             </div>
           </div>
-        )}
+          <div className="flex gap-2">
+            <button
+              onClick={executeClearing}
+              className="flex-1 py-2.5 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              {t("confirm", "确认清理")}
+            </button>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="flex-1 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors duration-200"
+            >
+              {t("cancel", "取消")}
+            </button>
+          </div>
+        </div>
+      )}
 
-        {/* 操作结果展示 - 减小外边距和内边距 */}
-        {isCleaningComplete && (
-          <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg overflow-hidden">
-            <div className="flex items-center text-green-800">
-              <span className="text-sm mr-1 flex-shrink-0">✅</span>
-              <div className="min-w-0">
-                <p className="font-medium text-sm truncate">
-                  {t("cleaning_complete", "清理完成")}
-                </p>
-                <p className="text-xs mt-0.5 break-words">
-                  {t("selected_data_cleared", "已清理所选数据类型")}
-                  {clearTime && (
-                    <span className="ml-1">
-                      ({t("time_taken", "耗时")}: {clearTime.toFixed(2)}ms)
-                    </span>
-                  )}
-                </p>
+      {/* 消息提示 */}
+      {message && !showConfirm && (
+        <div
+          className={`mb-4 p-3 rounded-lg text-sm overflow-hidden border-l-4 shadow-sm transition-all duration-200 ${
+            message.includes("成功") || message.includes("success")
+              ? "bg-green-50 text-green-800 border-green-500"
+              : message.includes("错误") || message.includes("error")
+              ? "bg-red-50 text-red-800 border-red-500"
+              : "bg-blue-50 text-blue-800 border-blue-500"
+          }`}
+        >
+          <p className="leading-relaxed break-words">{message}</p>
+        </div>
+      )}
+
+      {/* 主清理按钮 - 放在顶部 */}
+      <button
+        className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-200 shadow-lg mb-4 ${
+          isLoading
+            ? "bg-gray-400 cursor-not-allowed opacity-75"
+            : isCleaningComplete
+            ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 hover:shadow-xl transform hover:scale-[1.02]"
+            : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:scale-[1.02]"
+        } ${
+          selectedTypes.length === 0 && !isLoading
+            ? "opacity-50 cursor-not-allowed"
+            : ""
+        }`}
+        onClick={handleClearCache}
+        disabled={isLoading || selectedTypes.length === 0}
+      >
+        {isLoading ? (
+          <div className="flex justify-center items-center">
+            <div className="mr-2 w-6 h-6 rounded-full border-t-2 border-b-2 border-white animate-spin"></div>
+            <span>{t("cleaning", "正在清理...")}</span>
+          </div>
+        ) : isCleaningComplete ? (
+          <div className="flex justify-center items-center">
+            <span className="mr-2 text-xl">✅</span>
+            <div className="text-left">
+              <div>{t("cleaning_complete", "清理完成")}</div>
+              {clearTime && (
+                <div className="text-xs font-normal opacity-90">
+                  {t("time_taken", "耗时")}: {clearTime}ms
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center">
+            <span className="mr-2 text-xl">🚀</span>
+            <span>{t("start_cleaning_now", "立即清理")}</span>
+          </div>
+        )}
+      </button>
+
+      {/* 快捷选择按钮组 */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => handleSelectAll(true)}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+            selectedTypes.length === 2 && selectedTypes.includes("cache") && selectedTypes.includes("cookies")
+              ? "bg-green-500 text-white shadow-md"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-1">
+            <span>⚡</span>
+            <span>{t("quick_clean", "快速清理")}</span>
+          </div>
+        </button>
+        <button
+          onClick={() => handleSelectAll(false)}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+            selectedTypes.length === dataTypeOptions.length
+              ? "bg-green-500 text-white shadow-md"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-1">
+            <span>💪</span>
+            <span>{t("deep_clean", "深度清理")}</span>
+          </div>
+        </button>
+      </div>
+
+      {/* 高级选项 - 可折叠 */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
+        >
+          <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <span>⚙️</span>
+            <span>{t("advanced_options", "高级选项")}</span>
+          </span>
+          <svg
+            className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+              showAdvanced ? "transform rotate-180" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        {/* 展开的高级选项 */}
+        {showAdvanced && (
+          <div className="mt-3 space-y-3">
+            {/* 自动刷新开关 */}
+            <div className="p-3 bg-white border-2 border-gray-200 rounded-lg">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="auto-refresh"
+                  className="w-4 h-4 text-blue-600 rounded transition duration-150 ease-in-out cursor-pointer"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                />
+                <label
+                  htmlFor="auto-refresh"
+                  className="ml-2 text-sm text-gray-700 cursor-pointer flex-1"
+                >
+                  {t("auto_refresh_current", "清理后自动刷新当前页面")}
+                </label>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors duration-200 ${
+                    autoRefresh
+                      ? "text-green-800 bg-green-100"
+                      : "text-gray-600 bg-gray-100"
+                  }`}
+                >
+                  {autoRefresh ? t("enabled", "已启用") : t("disabled", "已禁用")}
+                </span>
               </div>
+            </div>
+
+            {/* 数据类型选择 */}
+            <div className="p-3 bg-white border-2 border-gray-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <span>📋</span>
+                <span>{t("selected_data_types", "已选择的数据类型")} ({selectedTypes.length})</span>
+              </h4>
+              
+              <div className="flex flex-wrap gap-2">
+                {dataTypeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleTypeSelect(option.value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
+                      selectedTypes.includes(option.value)
+                        ? "bg-green-500 text-white shadow-md transform scale-105"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+                    }`}
+                  >
+                    {selectedTypes.includes(option.value) && "✓ "}
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              
+              <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+                💡 {t("tip_click_to_toggle", "点击数据类型标签即可切换选择")}
+              </p>
             </div>
           </div>
         )}
-
-        {/* 清理按钮 */}
-        <button
-          className={`w-full py-2.5 rounded-lg font-medium ${
-            isLoading
-              ? "bg-gray-300 cursor-not-allowed"
-              : isCleaningComplete
-              ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-          onClick={handleClearCache}
-          disabled={isLoading || selectedTypes.length === 0}
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
-              {t("cleaning", "正在清理...")}
-            </div>
-          ) : isCleaningComplete ? (
-            t("clearAgain", "再次清理")
-          ) : activeTab === "smart" ? (
-            t("clearWithSmart", "智能清理")
-          ) : (
-            t("startCleaning", "开始清理")
-          )}
-        </button>
       </div>
+
+      {/* 性能提示 */}
+      {!isCleaningComplete && (
+        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <span className="text-lg flex-shrink-0">💡</span>
+            <div className="flex-1 text-xs text-purple-900 leading-relaxed">
+              <p className="font-medium mb-1">{t("performance_tip", "性能提示")}</p>
+              <p className="text-purple-800">
+                {t(
+                  "check_performance_info",
+                  "清理后可前往【性能检测】查看页面性能改善情况，帮助您了解浏览器速度提升效果。"
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

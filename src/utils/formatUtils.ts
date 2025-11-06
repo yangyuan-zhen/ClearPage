@@ -1,16 +1,31 @@
 /**
- * 将字节大小转换为人类可读的格式
+ * 将字节大小转换为人类可读的格式（紧凑版）
  * @param bytes 字节数
  * @returns 格式化后的字符串，如 1.5KB, 4.2MB 等
  */
 export function bytesToSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0B";
+  if (!isFinite(bytes) || bytes < 0) return "0B";
 
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // 限制最大单位为 GB
+  const index = Math.min(i, sizes.length - 1);
+  const value = bytes / Math.pow(k, index);
+
+  // 根据大小决定小数位数
+  let formatted: string;
+  if (value >= 100) {
+    formatted = Math.round(value).toString();
+  } else if (value >= 10) {
+    formatted = value.toFixed(1);
+  } else {
+    formatted = value.toFixed(2);
+  }
+
+  return formatted + sizes[index];
 }
 
 /**
@@ -20,7 +35,7 @@ export function bytesToSize(bytes: number): string {
  * @returns 格式化后的数字
  */
 export function formatNumber(num: number, digits: number = 2): number {
-    return parseFloat(num.toFixed(digits));
+  return parseFloat(num.toFixed(digits));
 }
 
 /**
@@ -29,13 +44,13 @@ export function formatNumber(num: number, digits: number = 2): number {
  * @returns 格式化后的时间字符串
  */
 export function formatTimeInMs(ms: number): string {
-    if (ms < 1) return '0 ms';
+  if (ms < 1) return "0 ms";
 
-    if (ms < 1000) {
-        return `${Math.round(ms)} ms`;
-    } else {
-        return `${(ms / 1000).toFixed(2)} s`;
-    }
+  if (ms < 1000) {
+    return `${Math.round(ms)} ms`;
+  } else {
+    return `${(ms / 1000).toFixed(2)} s`;
+  }
 }
 
 /**
@@ -44,14 +59,14 @@ export function formatTimeInMs(ms: number): string {
  * @returns 格式化后的日期时间字符串
  */
 export function formatDateTime(date: Date | number): string {
-    const d = typeof date === 'number' ? new Date(date) : date;
+  const d = typeof date === "number" ? new Date(date) : date;
 
-    return d.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-} 
+  return d.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}

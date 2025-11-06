@@ -201,6 +201,45 @@ const SettingsPanel: React.FC = () => {
     setEditingRule({ ...editingRule, dataTypes: updatedDataTypes });
   };
 
+  // 立即执行规则
+  const executeRule = async (rule: CleaningRule) => {
+    try {
+      showNotification(
+        currentLang === "zh_CN"
+          ? "正在执行清理规则..."
+          : "Executing cleaning rule...",
+        "info"
+      );
+
+      // 发送清理请求
+      const response = await chrome.runtime.sendMessage({
+        type: "CLEAR_CACHE",
+        payload: {
+          domain: rule.domain.split(",")[0].trim().replace("*.", ""), // 使用第一个域名
+          dataTypes: rule.dataTypes,
+          autoRefresh: false, // 规则执行时不自动刷新
+        },
+      });
+
+      if (response?.success) {
+        showNotification(
+          currentLang === "zh_CN"
+            ? `规则 "${rule.name}" 执行成功`
+            : `Rule "${rule.name}" executed successfully`,
+          "success"
+        );
+      } else {
+        throw new Error(response?.error || "Unknown error");
+      }
+    } catch (error) {
+      console.error("执行规则失败", error);
+      showNotification(
+        currentLang === "zh_CN" ? "执行规则失败" : "Failed to execute rule",
+        "error"
+      );
+    }
+  };
+
   // 重置所有设置
   const resetSettings = () => {
     if (
@@ -373,13 +412,30 @@ const SettingsPanel: React.FC = () => {
         <div className="space-y-4">
           {/* 规则编辑表单 */}
           {isEditing && editingRule && (
-            <div className="p-5 bg-white rounded-lg border border-gray-200 shadow-sm">
-              <h3 className="mb-4 text-lg font-medium text-gray-900">
-                {editingRule.id.startsWith("rule") &&
-                !rules.find((r) => r.id === editingRule.id)
-                  ? "添加新规则"
-                  : "编辑规则"}
-              </h3>
+            <div className="p-6 bg-gradient-to-br from-white to-blue-50 rounded-xl border-2 border-blue-200 shadow-lg">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex justify-center items-center w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-md">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingRule.id.startsWith("rule") &&
+                  !rules.find((r) => r.id === editingRule.id)
+                    ? "添加新规则"
+                    : "编辑规则"}
+                </h3>
+              </div>
 
               <div className="space-y-4">
                 <div>
@@ -416,55 +472,60 @@ const SettingsPanel: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-3 text-sm font-medium text-gray-700">
+                  <label className="block mb-3 text-sm font-semibold text-gray-700">
                     数据类型
                   </label>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {availableDataTypes.map(({ value, label, description }) => (
-                      <div
-                        key={value}
-                        className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                          editingRule.dataTypes.includes(value)
-                            ? "bg-blue-50 border-blue-200 shadow-sm"
-                            : "bg-white hover:bg-gray-50 border-gray-200"
-                        }`}
-                        onClick={() => handleDataTypeChange(value)}
-                      >
-                        <div className="flex items-start">
-                          <input
-                            type="checkbox"
-                            id={`dataType-${value}`}
-                            checked={editingRule.dataTypes.includes(value)}
-                            onChange={() => handleDataTypeChange(value)}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                          />
-                          <div className="ml-3">
-                            <label
-                              htmlFor={`dataType-${value}`}
-                              className="text-sm font-medium text-gray-700 cursor-pointer"
-                            >
-                              {label}
-                            </label>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {description}
-                            </p>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {availableDataTypes.map(({ value, label, description }) => {
+                      const isSelected = editingRule.dataTypes.includes(value);
+                      return (
+                        <div
+                          key={value}
+                          className={`p-3.5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? "bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-100"
+                              : "bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => handleDataTypeChange(value)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              id={`dataType-${value}`}
+                              checked={isSelected}
+                              onChange={() => handleDataTypeChange(value)}
+                              className="mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <label
+                                htmlFor={`dataType-${value}`}
+                                className={`block text-sm font-semibold cursor-pointer ${
+                                  isSelected ? "text-blue-700" : "text-gray-700"
+                                }`}
+                              >
+                                {label}
+                              </label>
+                              <p className="mt-1 text-xs text-gray-500 leading-tight">
+                                {description}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2 space-x-3">
+                <div className="flex justify-end pt-4 space-x-3">
                   <button
                     onClick={cancelEditing}
-                    className="px-3 py-2 text-sm text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border-2 border-gray-300 shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {t("cancel", "取消")}
                   </button>
                   <button
                     onClick={saveEditingRule}
-                    className="px-3 py-2 text-sm text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     {t("save", "保存")}
                   </button>
@@ -477,15 +538,9 @@ const SettingsPanel: React.FC = () => {
           {!isEditing && (
             <>
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {t("cleaningRules", "清理规则")}
-                </h3>
-                <button
-                  onClick={addRule}
-                  className="flex items-center px-3 py-2 text-sm text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <svg
-                    className="mr-1 w-4 h-4"
+                    className="w-5 h-5 text-blue-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -494,6 +549,25 @@ const SettingsPanel: React.FC = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  {t("cleaningRules", "清理规则")}
+                </h3>
+                <button
+                  onClick={addRule}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 hover:shadow-md transform hover:scale-105"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
@@ -529,20 +603,38 @@ const SettingsPanel: React.FC = () => {
                   rules.map((rule) => (
                     <div
                       key={rule.id}
-                      className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md"
+                      className="group relative p-5 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-blue-200"
                     >
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium text-gray-900 text-md">
-                          {rule.name}
-                        </h3>
-                        <div className="flex space-x-2">
+                      {/* 规则标题和操作按钮 */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex justify-center items-center w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                              />
+                            </svg>
+                          </div>
+                          <h3 className="font-semibold text-gray-900 text-base">
+                            {rule.name}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => editRule(rule)}
-                            className="p-1 text-gray-400 transition-colors hover:text-blue-500"
+                            className="p-1.5 text-gray-400 rounded-lg transition-all hover:text-blue-600 hover:bg-blue-50"
                             title={t("edit", "编辑")}
                           >
                             <svg
-                              className="w-5 h-5"
+                              className="w-4 h-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -557,11 +649,11 @@ const SettingsPanel: React.FC = () => {
                           </button>
                           <button
                             onClick={() => deleteRule(rule.id)}
-                            className="p-1 text-gray-400 transition-colors hover:text-red-500"
+                            className="p-1.5 text-gray-400 rounded-lg transition-all hover:text-red-600 hover:bg-red-50"
                             title={t("delete", "删除")}
                           >
                             <svg
-                              className="w-5 h-5"
+                              className="w-4 h-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -577,30 +669,90 @@ const SettingsPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mb-3 text-sm text-gray-600">
-                        <span className="font-medium">
-                          {t("domain", "域名")}：
-                        </span>{" "}
-                        {rule.domain}
+                      {/* 域名信息 */}
+                      <div className="mb-4 p-3 bg-white rounded-lg border border-gray-100">
+                        <div className="flex items-start gap-2">
+                          <svg
+                            className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                            />
+                          </svg>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-1">
+                              {t("domain", "域名")}
+                            </p>
+                            <p className="text-sm text-gray-700 font-mono break-all">
+                              {rule.domain}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="mb-1 text-xs text-gray-500">
-                          {t("dataType", "数据类型")}： 清理数据类型：
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {rule.dataTypes.map((type) => (
-                            <span
-                              key={type}
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {availableDataTypes.find(
-                                (dt) => dt.value === type
-                              )?.label || type}
-                            </span>
-                          ))}
+                      {/* 数据类型标签 */}
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-2">
+                          {t("dataType", "数据类型")}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {rule.dataTypes.map((type) => {
+                            const dataTypeInfo = availableDataTypes.find(
+                              (dt) => dt.value === type
+                            );
+                            // 为不同的数据类型分配不同的颜色
+                            const colorMap: Record<string, string> = {
+                              cache:
+                                "bg-blue-100 text-blue-700 border-blue-200",
+                              cookies:
+                                "bg-amber-100 text-amber-700 border-amber-200",
+                              localStorage:
+                                "bg-purple-100 text-purple-700 border-purple-200",
+                              sessionStorage:
+                                "bg-green-100 text-green-700 border-green-200",
+                              indexedDB:
+                                "bg-pink-100 text-pink-700 border-pink-200",
+                              webSQL:
+                                "bg-indigo-100 text-indigo-700 border-indigo-200",
+                              fileSystem:
+                                "bg-orange-100 text-orange-700 border-orange-200",
+                            };
+                            const colorClass =
+                              colorMap[type] ||
+                              "bg-gray-100 text-gray-700 border-gray-200";
+
+                            return (
+                              <span
+                                key={type}
+                                className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${colorClass} transition-all hover:scale-105`}
+                              >
+                                {dataTypeInfo?.label || type}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
+
+                      {/* 执行按钮 */}
+                      <button
+                        onClick={() => executeRule(rule)}
+                        className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg shadow-sm transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-md flex items-center justify-center gap-2"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                        {t("execute", "执行")}
+                      </button>
                     </div>
                   ))
                 )}

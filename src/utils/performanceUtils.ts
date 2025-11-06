@@ -1,21 +1,20 @@
 export interface PagePerformance {
     url: string;
-    score: number;
-    timing: number;
-    resourceCount: number;
-    resourceSize: number;
-    jsSize: number;
-    cssSize: number;
-    imageSize: number;
-    domElements: number;
-    jsExecutionTime: number;    // JavaScript执行时间
-    cssParsingTime: number;     // CSS解析时间
-    firstPaint: number;         // 首次绘制时间
-    firstContentfulPaint: number; // 首次内容绘制时间
-    domInteractive: number;     // DOM可交互时间
-    domComplete: number;        // DOM完成时间
+    score: number;              // 综合性能评分 0-100
+    timing: number;             // 总加载时间(ms)
+    resourceCount: number;      // 资源总数
+    resourceSize: number;       // 资源总大小(bytes)
+    jsSize: number;             // JS文件总大小(bytes)
+    cssSize: number;            // CSS文件总大小(bytes)
+    imageSize: number;          // 图片文件总大小(bytes)
+    domElements: number;        // DOM元素数量
+    firstPaint: number;         // 首次绘制时间(ms)
+    firstContentfulPaint: number; // 首次内容绘制时间(ms) - FCP
+    largestContentfulPaint: number; // 最大内容绘制时间(ms) - LCP
+    domInteractive: number;     // DOM可交互时间(ms)
+    domComplete: number;        // DOM完成时间(ms)
     networkRequests: number;    // 网络请求数量
-    cacheHitRate: number;       // 缓存命中率(百分比)
+    cacheHitRate: number;       // 缓存命中率(0-100)
     memoryUsage: number;        // 内存使用量(MB)
     longTasks: number;          // 长任务(>50ms)数量
     resourceTypes: {            // 各类型资源细分
@@ -58,18 +57,17 @@ const generateFallbackData = (url: string): PagePerformance => {
 
     return {
         url,
-        score: Math.round(85 * randomFactor), // 随机化分数
-        timing: Math.round(1000 * randomFactor), // 随机化加载时间
+        score: Math.round(85 * randomFactor),
+        timing: Math.round(1000 * randomFactor),
         resourceCount: Math.round(15 * randomFactor),
-        resourceSize: Math.round(200000 * randomFactor), // 随机化资源大小
+        resourceSize: Math.round(200000 * randomFactor),
         jsSize: Math.round(80000 * randomFactor),
         cssSize: Math.round(40000 * randomFactor),
         imageSize: Math.round(70000 * randomFactor),
         domElements: Math.round(300 * randomFactor),
-        jsExecutionTime: Math.round(200 * randomFactor),
-        cssParsingTime: Math.round(100 * randomFactor),
         firstPaint: Math.round(400 * randomFactor),
         firstContentfulPaint: Math.round(600 * randomFactor),
+        largestContentfulPaint: Math.round(800 * randomFactor),
         domInteractive: Math.round(700 * randomFactor),
         domComplete: Math.round(900 * randomFactor),
         networkRequests: Math.round(15 * randomFactor),
@@ -192,14 +190,6 @@ const validatePerformanceData = (data: any): PagePerformance => {
             ? Math.min(data.domElements, 10000)
             : 300,
 
-        jsExecutionTime: typeof data.jsExecutionTime === 'number' && isFinite(data.jsExecutionTime) && data.jsExecutionTime >= 0
-            ? Math.min(data.jsExecutionTime, 10000)
-            : 200,
-
-        cssParsingTime: typeof data.cssParsingTime === 'number' && isFinite(data.cssParsingTime) && data.cssParsingTime >= 0
-            ? Math.min(data.cssParsingTime, 5000)
-            : 100,
-
         firstPaint: typeof data.firstPaint === 'number' && isFinite(data.firstPaint) && data.firstPaint >= 0
             ? Math.min(data.firstPaint, 10000)
             : 400,
@@ -207,6 +197,10 @@ const validatePerformanceData = (data: any): PagePerformance => {
         firstContentfulPaint: typeof data.firstContentfulPaint === 'number' && isFinite(data.firstContentfulPaint) && data.firstContentfulPaint >= 0
             ? Math.min(data.firstContentfulPaint, 10000)
             : 600,
+
+        largestContentfulPaint: typeof data.largestContentfulPaint === 'number' && isFinite(data.largestContentfulPaint) && data.largestContentfulPaint >= 0
+            ? Math.min(data.largestContentfulPaint, 10000)
+            : 800,
 
         domInteractive: typeof data.domInteractive === 'number' && isFinite(data.domInteractive) && data.domInteractive >= 0
             ? Math.min(data.domInteractive, 20000)
@@ -315,17 +309,16 @@ export const getPagePerformance = async (
                                 return {
                                     url: window.location.href,
                                     score: 50,
-                                    timing: loadTime > 0 ? loadTime : 1000, // 确保值为正
+                                    timing: loadTime > 0 ? loadTime : 1000,
                                     resourceCount: performance.getEntriesByType('resource').length,
                                     resourceSize: 0,
                                     jsSize: 0,
                                     cssSize: 0,
                                     imageSize: 0,
                                     domElements: document.querySelectorAll('*').length,
-                                    jsExecutionTime: 0,
-                                    cssParsingTime: 0,
                                     firstPaint: 0,
                                     firstContentfulPaint: 0,
+                                    largestContentfulPaint: 0,
                                     domInteractive: timing.domInteractive - timing.navigationStart,
                                     domComplete: timing.domComplete - timing.navigationStart,
                                     networkRequests: performance.getEntriesByType('resource').length,

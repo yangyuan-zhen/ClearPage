@@ -11,7 +11,6 @@ import { motion } from "framer-motion";
 
 // 导入性能组件
 import ScoreCard from "./performance/ScoreCard";
-import ResourceChart from "./performance/ResourceChart";
 import MetricCard from "./performance/MetricCard";
 
 // 修改METRICS_CONFIG以支持字符串索引
@@ -346,46 +345,40 @@ const PerformancePanel: React.FC = () => {
 
   return (
     <div className="p-4">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-800 mb-1">
-          {t("performance_detection", "性能检测")}
-        </h2>
-        <p className="text-sm text-gray-600">
-          {t(
-            "analyze_page_performance",
-            "分析当前页面的加载性能和资源使用情况"
-          )}
-        </p>
-      </div>
-
       {isLoading ? (
         <motion.div
           className="flex justify-center items-center py-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="w-8 h-8 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
           <span className="ml-2 text-gray-600">
             {t("loading_performance", "加载性能数据中...")}
           </span>
         </motion.div>
       ) : error ? (
         <motion.div
-          className="bg-red-50 text-red-700 p-4 rounded-lg shadow-sm"
+          className="p-4 text-red-700 bg-red-50 rounded-lg border-l-4 border-red-500 shadow-sm transition-all duration-200"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h3 className="font-medium mb-1">{t("error", "错误")}</h3>
-          <p className="text-sm break-words">{error}</p>
+          <div className="flex items-start mb-2">
+            <span className="flex-shrink-0 mr-2 text-xl">⚠️</span>
+            <div className="flex-1">
+              <h3 className="mb-1 font-semibold">{t("error", "错误")}</h3>
+              <p className="text-sm leading-relaxed break-words">{error}</p>
+            </div>
+          </div>
           <div className="mt-3 space-y-2">
             <button
               onClick={() => fetchPerformance(true)}
-              className="w-full text-white bg-red-600 hover:bg-red-700 py-2 px-3 rounded text-sm font-medium transition-colors"
+              className="w-full text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] flex items-center justify-center"
             >
+              <span className="mr-2">🔄</span>
               {t("try_again", "重试")}
             </button>
-            <div className="text-xs text-red-600 mt-2">
-              <p>
+            <div className="p-2 mt-2 text-xs text-red-600 bg-red-100 rounded-md">
+              <p className="leading-relaxed">
                 {t(
                   "troubleshooting_tips",
                   "故障排除提示: 尝试刷新页面后再检测，或者在页面完全加载后再尝试。"
@@ -395,228 +388,134 @@ const PerformancePanel: React.FC = () => {
           </div>
         </motion.div>
       ) : performance ? (
-        <div className="space-y-6">
-          {/* 顶部信息 */}
-          <motion.div
-            className="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-100"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center">
-              <div className="text-xl text-blue-700 mr-2">ℹ️</div>
-              <div>
-                <h3 className="font-medium text-blue-800">
-                  {t("current_page", "当前页面")}
-                </h3>
-                <p className="text-sm text-blue-700 truncate max-w-full">
-                  {currentUrl ? new URL(currentUrl).hostname : ""}
-                </p>
-              </div>
-            </div>
-          </motion.div>
+        <div className="space-y-3">
+          {/* 总体评分卡片 - 全宽突出显示 */}
+          <ScoreCard
+            score={performance.score}
+            title={t("overall_score", "总体评分")}
+            getRating={getPerformanceRating}
+            t={t}
+          />
 
-          {/* 区块一：评分和加载时间 */}
-          <div>
-            <h3 className="text-base font-semibold text-gray-700 mb-3">
-              {t("performance_overview", "性能概览")}
-            </h3>
+          {/* 核心 Web Vitals - 2x2 对称布局 */}
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              title="FCP"
+              value={formatTimeInMs(performance.firstContentfulPaint)}
+              status={
+                performance.firstContentfulPaint < 1800
+                  ? "good"
+                  : performance.firstContentfulPaint < 3000
+                  ? "medium"
+                  : "poor"
+              }
+              icon="⚡"
+              description={t("first_contentful_paint_desc", "首次内容绘制")}
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {/* 总体评分卡片 */}
-              <ScoreCard
-                score={performance.score}
-                title={t("overall_score", "总体评分")}
-                getRating={getPerformanceRating}
-                t={t}
-              />
+            <MetricCard
+              title="LCP"
+              value={formatTimeInMs(
+                performance.largestContentfulPaint || performance.timing
+              )}
+              status={
+                (performance.largestContentfulPaint || performance.timing) <
+                2500
+                  ? "good"
+                  : (performance.largestContentfulPaint || performance.timing) <
+                    4000
+                  ? "medium"
+                  : "poor"
+              }
+              icon="🎯"
+              description={t("largest_contentful_paint_desc", "最大内容绘制")}
+            />
 
-              {/* 加载时间卡片 */}
-              <MetricCard
-                title={t("loading_time", "加载时间")}
-                value={formatNumber(performance.timing / 1000 || 0)}
-                unit="s"
-                status={
-                  performance.timing < 2000
-                    ? "good"
-                    : performance.timing < 4000
-                    ? "medium"
-                    : "poor"
-                }
-                icon="⏱️"
-                description={t(
-                  getLoadingTimeRating(performance.timing),
-                  getLoadingTimeRating(performance.timing)
-                )}
-              />
-            </div>
+            <MetricCard
+              title={t("load_time", "加载时间")}
+              value={formatTimeInMs(performance.timing)}
+              status={
+                performance.timing < 2000
+                  ? "good"
+                  : performance.timing < 4000
+                  ? "medium"
+                  : "poor"
+              }
+              icon="⏱️"
+              description={t(
+                getLoadingTimeRating(performance.timing),
+                getLoadingTimeRating(performance.timing)
+              )}
+            />
 
-            {/* 关键性能指标 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <MetricCard
-                title={t("first_paint", "首次绘制")}
-                value={formatTimeInMs(performance.firstPaint)}
-                status={
-                  performance.firstPaint < 1000
-                    ? "good"
-                    : performance.firstPaint < 2000
-                    ? "medium"
-                    : "poor"
-                }
-              />
-
-              <MetricCard
-                title={t("first_contentful_paint", "首次内容绘制")}
-                value={formatTimeInMs(performance.firstContentfulPaint)}
-                status={
-                  performance.firstContentfulPaint < 1500
-                    ? "good"
-                    : performance.firstContentfulPaint < 3000
-                    ? "medium"
-                    : "poor"
-                }
-              />
-
-              <MetricCard
-                title={t("dom_interactive", "DOM可交互")}
-                value={formatTimeInMs(performance.domInteractive)}
-                status={
-                  performance.domInteractive < 2000
-                    ? "good"
-                    : performance.domInteractive < 4000
-                    ? "medium"
-                    : "poor"
-                }
-              />
-
-              <MetricCard
-                title={t("dom_complete", "DOM完成")}
-                value={formatTimeInMs(performance.domComplete)}
-                status={
-                  performance.domComplete < 3000
-                    ? "good"
-                    : performance.domComplete < 6000
-                    ? "medium"
-                    : "poor"
-                }
-              />
-            </div>
-          </div>
-
-          {/* 区块二：资源数量、大小和图表 */}
-          <div>
-            <h3 className="text-base font-semibold text-gray-700 mb-3">
-              {t("resource_analysis", "资源分析")}
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <MetricCard
-                title={t("resource_count", "资源数量")}
-                value={performance.resourceCount}
-                status={getResourceCountStatus(performance.resourceCount)}
-                icon="📦"
-              />
-
-              <MetricCard
-                title={t("resource_size", "资源大小")}
-                value={bytesToSize(performance.resourceSize)}
-                status={getResourceSizeStatus(performance.resourceSize)}
-                icon="📊"
-              />
-
-              <MetricCard
-                title={t("cache_hit_rate", "缓存命中率")}
-                value={performance.cacheHitRate}
-                unit="%"
-                status={getCacheHitRateStatus(performance.cacheHitRate)}
-                icon="📝"
-              />
-
-              <MetricCard
-                title={t("memory_usage", "内存使用")}
-                value={performance.memoryUsage}
-                unit="MB"
-                status={getMemoryUsageStatus(performance.memoryUsage)}
-                icon="💾"
-              />
-            </div>
-
-            {/* 执行时间指标 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-              <MetricCard
-                title={t("js_execution_time", "JS执行时间")}
-                value={formatTimeInMs(performance.jsExecutionTime)}
-                status={
-                  performance.jsExecutionTime < 300
-                    ? "good"
-                    : performance.jsExecutionTime < 800
-                    ? "medium"
-                    : "poor"
-                }
-              />
-
-              <MetricCard
-                title={t("css_parsing_time", "CSS解析时间")}
-                value={formatTimeInMs(performance.cssParsingTime)}
-                status={
-                  performance.cssParsingTime < 100
-                    ? "good"
-                    : performance.cssParsingTime < 300
-                    ? "medium"
-                    : "poor"
-                }
-              />
-
-              <MetricCard
-                title={t("dom_elements", "DOM元素数量")}
-                value={performance.domElements}
-                status={
-                  performance.domElements < 500
-                    ? "good"
-                    : performance.domElements < 1500
-                    ? "medium"
-                    : "poor"
-                }
-              />
-            </div>
-
-            {/* 资源分析图表 */}
-            <ResourceChart
-              resourceTypes={performance.resourceTypes}
-              jsSize={performance.jsSize}
-              cssSize={performance.cssSize}
-              imageSize={performance.imageSize}
-              t={t}
+            <MetricCard
+              title={t("dom_interactive", "DOM可交互")}
+              value={formatTimeInMs(performance.domInteractive)}
+              status={
+                performance.domInteractive < 2000
+                  ? "good"
+                  : performance.domInteractive < 4000
+                  ? "medium"
+                  : "poor"
+              }
+              icon="⚙️"
+              description={t("interactive_time", "可交互时间")}
             />
           </div>
 
-          {/* 运行性能检测按钮 */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+          {/* 页面复杂度指标 - 2列对称 */}
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              title={t("dom_elements", "DOM元素")}
+              value={performance.domElements}
+              status={
+                performance.domElements < 800
+                  ? "good"
+                  : performance.domElements < 1500
+                  ? "medium"
+                  : "poor"
+              }
+              icon="🧩"
+              description={t("dom_complexity", "页面复杂度")}
+            />
+
+            <MetricCard
+              title={t("long_tasks", "长任务")}
+              value={performance.longTasks}
+              status={
+                performance.longTasks < 3
+                  ? "good"
+                  : performance.longTasks < 10
+                  ? "medium"
+                  : "poor"
+              }
+              icon="⏱️"
+              description={t("blocking_tasks", "阻塞任务数")}
+            />
+          </div>
+
+          {/* 重新检测按钮 - 紧凑显示 */}
+          <button
+            onClick={() => fetchPerformance(false)}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center"
           >
-            <button
-              onClick={() => fetchPerformance(false)}
-              className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-2 w-5 h-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {t("run_test", "重新检测")}
-            </button>
-          </motion.div>
+              <path
+                fillRule="evenodd"
+                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {t("run_test", "重新检测")}
+          </button>
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-500">
+        <div className="py-8 text-center text-gray-500">
           {t("no_data", "暂无性能数据")}
         </div>
       )}
