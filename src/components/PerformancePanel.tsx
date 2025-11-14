@@ -345,6 +345,12 @@ const PerformancePanel: React.FC = () => {
 
   return (
     <div className="p-4">
+      {isSpecialPage && (
+        <div className="mb-3 p-3 text-sm rounded-lg border-l-4 bg-yellow-50 border-yellow-500 text-yellow-800">
+          <div className="font-semibold">{t("special_page_notice", "特殊页面提示")}</div>
+          <div>{t("special_page_message", "当前页面是浏览器内置页面或扩展页面，无法获取真实性能数据。显示的数据为模拟值。")}</div>
+        </div>
+      )}
       {isLoading ? (
         <motion.div
           className="flex justify-center items-center py-8"
@@ -497,7 +503,12 @@ const PerformancePanel: React.FC = () => {
           {/* 重新检测按钮 - 紧凑显示 */}
           <button
             onClick={() => fetchPerformance(false)}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center"
+            disabled={isSpecialPage}
+            className={`w-full py-3 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center ${
+              isSpecialPage
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "btn-primary"
+            }`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

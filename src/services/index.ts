@@ -12,9 +12,6 @@ export * from './performanceService';
 // 导出日志服务
 export * from './logService';
 
-// 导出历史服务（如果存在）
-import * as historyService from './historyService';
-export { historyService };
 
 /**
  * 服务初始化函数
@@ -35,4 +32,4 @@ export function cleanupServices(): void {
     // 此处可以添加各种服务的清理逻辑
 
     console.log('所有服务已清理');
-} 
+}

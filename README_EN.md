@@ -17,6 +17,8 @@ A simple and efficient browser extension that helps users quickly clean cache, c
 - 🎨 Modern gradient design with hidden scrollbars
 - 📈 Integrated performance detection to track optimization results
 - ⏱️ Custom cleaning rules with instant execution
+- ♿ Accessibility support (focus-visible, keyboard navigation, color contrast)
+- 🧩 Unified component styles (buttons/inputs/selects/cards), responsive layout and transitions
 
 ## 📸 Product Screenshot
 
@@ -101,6 +103,17 @@ npm test
 MIT License
 
 ## 📅 Change Log
+
+### 2025-11-15
+
+**UI & Usability Update**
+
+- Popup fixed height `600px`, responsive width `520–640px` (`src/components/App.tsx:104`)
+- Sidebar width reduced for better balance: `w-36/sm:w-40/md:w-44` (`src/components/App.tsx:106`)
+- Sidebar labels forced single-line to prevent wrapping (`src/styles/tailwind.css:26-32`)
+- Unified component styles and focus-visible accessibility (`src/styles/tailwind.css`)
+- Navigation accessibility: `role="navigation"` and `aria-current` (`src/components/App.tsx:113-126`)
+- Removed cleaning history feature to simplify permissions and maintenance (`src/services/historyService.ts` removed)
 
 ### 2025-11-06
 

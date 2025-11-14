@@ -8,6 +8,7 @@ import {
   clearFormData,
   clearFileSystem,
 } from "@/utils";
+import { shouldPreserveCookies } from "../utils/smartCleanUtils";
 
 // 已有类型的定义
 type DataType = string;
@@ -21,16 +22,14 @@ const CacheClearButton: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [clearTime, setClearTime] = useState<number | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<DataType[]>([
-    "cache",
-    "cookies",
-  ]);
+  const [selectedTypes, setSelectedTypes] = useState<DataType[]>(["cache"]);
   const [isCleaningComplete, setIsCleaningComplete] = useState<boolean>(false);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
   const [whitelist, setWhitelist] = useState<string[]>([]);
   const [estimatedSize, setEstimatedSize] = useState<number>(0);
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false); // 是否显示高级选项
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [autoWhitelistApplied, setAutoWhitelistApplied] = useState<boolean>(false);
 
   // 数据类型选项
   const dataTypeOptions: {
@@ -117,6 +116,17 @@ const CacheClearButton: React.FC = () => {
     getCurrentTab();
     loadWhitelist();
   }, []);
+
+  useEffect(() => {
+    if (currentDomain && !autoWhitelistApplied) {
+      if (shouldPreserveCookies(currentDomain) && !whitelist.includes(currentDomain)) {
+        const newList = [...whitelist, currentDomain];
+        setWhitelist(newList);
+        chrome.storage.sync.set({ cookieWhitelist: newList });
+      }
+      setAutoWhitelistApplied(true);
+    }
+  }, [currentDomain, whitelist, autoWhitelistApplied]);
 
   // 预估可释放的存储空间
   const estimateClearingSize = () => {
@@ -206,7 +216,9 @@ const CacheClearButton: React.FC = () => {
       setMessage(
         currentLang === "zh_CN"
           ? `清理成功！已释放约 ${formatBytes(estimatedSize)} 空间`
-          : `Cleaned successfully! Freed approximately ${formatBytes(estimatedSize)}`
+          : `Cleaned successfully! Freed approximately ${formatBytes(
+              estimatedSize
+            )}`
       );
     } catch (error) {
       console.error("清理缓存失败", error);
@@ -294,9 +306,9 @@ const CacheClearButton: React.FC = () => {
   return (
     <div className="overflow-hidden relative p-4">
       {/* 网站信息卡片 */}
-      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-l-4 border-blue-500 shadow-md">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center flex-1 truncate">
+      <div className="p-4 mb-4 card">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex flex-1 items-center truncate">
             <span className="mr-3 text-2xl">🌐</span>
             <div className="truncate">
               <h3 className="font-semibold text-blue-900">
@@ -312,19 +324,23 @@ const CacheClearButton: React.FC = () => {
               onClick={() => toggleWhitelist(currentDomain)}
               className={`ml-3 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 shadow-md ${
                 isInWhitelist
-                  ? "bg-green-500 text-white hover:bg-green-600 hover:shadow-lg"
-                  : "bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:bg-green-50"
+                  ? "text-white bg-green-500 hover:bg-green-600 hover:shadow-lg"
+                  : "text-gray-700 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50"
               }`}
             >
               <span className="text-lg">🛡️</span>
-              <span>{isInWhitelist ? t("protected", "已保护") : t("protect_login", "保护登录")}</span>
+              <span>
+                {isInWhitelist
+                  ? t("protected", "已保护")
+                  : t("protect_login", "保护登录")}
+              </span>
             </button>
           )}
         </div>
 
         {/* 预估释放空间 */}
-        <div className="flex items-center justify-between pt-3 border-t border-blue-200">
-          <div className="flex items-center gap-2">
+        <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+          <div className="flex gap-2 items-center">
             <span className="text-sm text-blue-700">
               📊 {t("will_free_space", "将释放约")}:
             </span>
@@ -332,13 +348,23 @@ const CacheClearButton: React.FC = () => {
               {formatBytes(estimatedSize)}
             </span>
           </div>
-          
+
           {isInWhitelist && (
-            <div className="text-xs px-3 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200 font-medium flex items-center gap-2">
-              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+            <div className="flex gap-2 items-center px-3 py-2 text-xs font-medium text-green-700 bg-green-50 rounded-lg border border-border">
+              <svg
+                className="flex-shrink-0 w-4 h-4"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
               </svg>
-              <span>{t("login_protected_desc", "登录已保护，清理时将保留 Cookies")}</span>
+              <span>
+                {t("login_protected_desc", "登录已保护，清理时将保留 Cookies")}
+              </span>
             </div>
           )}
         </div>
@@ -346,19 +372,27 @@ const CacheClearButton: React.FC = () => {
 
       {/* 确认对话框 */}
       {showConfirm && (
-        <div className="mb-4 p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500 shadow-md">
+        <div className="p-4 mb-4 bg-orange-50 rounded-lg border-l-4 border-orange-500 shadow-md">
           <div className="flex items-start mb-3">
             <span className="flex-shrink-0 mr-2 text-2xl">⚠️</span>
             <div className="flex-1">
-              <h4 className="font-semibold text-orange-900 mb-1">
+              <h4 className="mb-1 font-semibold text-orange-900">
                 {t("confirm_cleaning", "确认清理")}
               </h4>
-              <p className="text-sm text-orange-800 leading-relaxed">
+              <p className="text-sm leading-relaxed text-orange-800">
                 {t(
                   "confirm_sensitive_data",
                   "您即将清理包含敏感数据的内容，这可能导致您需要重新登录此网站。确定要继续吗？"
                 )}
               </p>
+              {!isInWhitelist && (
+                <p className="mt-2 text-xs text-orange-700">
+                  {t(
+                    "suggest_whitelist",
+                    "建议将当前站点加入白名单以保护登录状态"
+                  )}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-2">
@@ -368,6 +402,17 @@ const CacheClearButton: React.FC = () => {
             >
               {t("confirm", "确认清理")}
             </button>
+            {!isInWhitelist && (
+              <button
+                onClick={async () => {
+                  await toggleWhitelist(currentDomain);
+                  executeClearing();
+                }}
+                className="flex-1 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors duration-200"
+              >
+                {t("protect_and_continue", "加入白名单并继续")}
+              </button>
+            )}
             <button
               onClick={() => setShowConfirm(false)}
               className="flex-1 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors duration-200"
@@ -395,17 +440,11 @@ const CacheClearButton: React.FC = () => {
 
       {/* 主清理按钮 - 放在顶部 */}
       <button
-        className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-200 shadow-lg mb-4 ${
-          isLoading
-            ? "bg-gray-400 cursor-not-allowed opacity-75"
-            : isCleaningComplete
-            ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 hover:shadow-xl transform hover:scale-[1.02]"
-            : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:scale-[1.02]"
-        } ${
+        className={`w-full btn-primary py-4 rounded-xl font-bold text-base mb-4 ${
           selectedTypes.length === 0 && !isLoading
             ? "opacity-50 cursor-not-allowed"
             : ""
-        }`}
+        } ${isLoading ? "cursor-not-allowed" : ""}`}
         onClick={handleClearCache}
         disabled={isLoading || selectedTypes.length === 0}
       >
@@ -439,12 +478,14 @@ const CacheClearButton: React.FC = () => {
         <button
           onClick={() => handleSelectAll(true)}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-            selectedTypes.length === 2 && selectedTypes.includes("cache") && selectedTypes.includes("cookies")
-              ? "bg-green-500 text-white shadow-md"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            selectedTypes.length === 2 &&
+            selectedTypes.includes("cache") &&
+            selectedTypes.includes("cookies")
+              ? "bg-accent text-white shadow-md"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
           }`}
         >
-          <div className="flex items-center justify-center gap-1">
+          <div className="flex gap-1 justify-center items-center">
             <span>⚡</span>
             <span>{t("quick_clean", "快速清理")}</span>
           </div>
@@ -453,11 +494,11 @@ const CacheClearButton: React.FC = () => {
           onClick={() => handleSelectAll(false)}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
             selectedTypes.length === dataTypeOptions.length
-              ? "bg-green-500 text-white shadow-md"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              ? "bg-accent text-white shadow-md"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
           }`}
         >
-          <div className="flex items-center justify-center gap-1">
+          <div className="flex gap-1 justify-center items-center">
             <span>💪</span>
             <span>{t("deep_clean", "深度清理")}</span>
           </div>
@@ -468,9 +509,9 @@ const CacheClearButton: React.FC = () => {
       <div className="mb-4">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
+          className="flex justify-between items-center p-3 w-full bg-gray-50 rounded-lg border border-gray-200 transition-colors duration-200 hover:bg-gray-100"
         >
-          <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <span className="flex gap-2 items-center text-sm font-medium text-gray-700">
             <span>⚙️</span>
             <span>{t("advanced_options", "高级选项")}</span>
           </span>
@@ -495,7 +536,7 @@ const CacheClearButton: React.FC = () => {
         {showAdvanced && (
           <div className="mt-3 space-y-3">
             {/* 自动刷新开关 */}
-            <div className="p-3 bg-white border-2 border-gray-200 rounded-lg">
+            <div className="p-3 card">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -506,7 +547,7 @@ const CacheClearButton: React.FC = () => {
                 />
                 <label
                   htmlFor="auto-refresh"
-                  className="ml-2 text-sm text-gray-700 cursor-pointer flex-1"
+                  className="flex-1 ml-2 text-sm text-gray-700 cursor-pointer"
                 >
                   {t("auto_refresh_current", "清理后自动刷新当前页面")}
                 </label>
@@ -517,18 +558,23 @@ const CacheClearButton: React.FC = () => {
                       : "text-gray-600 bg-gray-100"
                   }`}
                 >
-                  {autoRefresh ? t("enabled", "已启用") : t("disabled", "已禁用")}
+                  {autoRefresh
+                    ? t("enabled", "已启用")
+                    : t("disabled", "已禁用")}
                 </span>
               </div>
             </div>
 
             {/* 数据类型选择 */}
-            <div className="p-3 bg-white border-2 border-gray-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <div className="p-3 card">
+              <h4 className="flex gap-2 items-center mb-3 text-sm font-semibold text-gray-800">
                 <span>📋</span>
-                <span>{t("selected_data_types", "已选择的数据类型")} ({selectedTypes.length})</span>
+                <span>
+                  {t("selected_data_types", "已选择的数据类型")} (
+                  {selectedTypes.length})
+                </span>
               </h4>
-              
+
               <div className="flex flex-wrap gap-2">
                 {dataTypeOptions.map((option) => (
                   <button
@@ -545,10 +591,21 @@ const CacheClearButton: React.FC = () => {
                   </button>
                 ))}
               </div>
-              
-              <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+
+              <p className="mt-3 text-xs leading-relaxed text-gray-500">
                 💡 {t("tip_click_to_toggle", "点击数据类型标签即可切换选择")}
               </p>
+              {(selectedTypes.includes("cache") ||
+                selectedTypes.includes("indexedDB") ||
+                selectedTypes.includes("webSQL") ||
+                selectedTypes.includes("fileSystem")) && (
+                <div className="p-2 mt-2 text-xs text-amber-800 bg-amber-100 rounded-md border border-amber-200">
+                  {t(
+                    "global_clean_warning",
+                    "提示：部分数据类型可能执行全局清理并影响其他网站（如 缓存/IndexedDB/WebSQL/文件系统）"
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -556,11 +613,13 @@ const CacheClearButton: React.FC = () => {
 
       {/* 性能提示 */}
       {!isCleaningComplete && (
-        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-          <div className="flex items-start gap-2">
-            <span className="text-lg flex-shrink-0">💡</span>
-            <div className="flex-1 text-xs text-purple-900 leading-relaxed">
-              <p className="font-medium mb-1">{t("performance_tip", "性能提示")}</p>
+        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="flex gap-2 items-start">
+            <span className="flex-shrink-0 text-lg">💡</span>
+            <div className="flex-1 text-xs leading-relaxed text-purple-900">
+              <p className="mb-1 font-medium">
+                {t("performance_tip", "性能提示")}
+              </p>
               <p className="text-purple-800">
                 {t(
                   "check_performance_info",

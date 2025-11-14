@@ -200,6 +200,14 @@ const isComplexWebApp = (domain: string): boolean => {
     return /app|portal|dashboard|admin|account|system|platform/.test(domain.toLowerCase());
 };
 
+export const shouldPreserveCookies = (domain: string): boolean => {
+    const category = getWebsiteCategory(domain);
+    if (category === "banking" || category === "mail" || category === "webapp") {
+        return true;
+    }
+    return /(login|signin|account|passport|auth|sso|portal)/i.test(domain);
+};
+
 /**
  * 获取智能清理建议
  * @param domain 当前域名
@@ -313,4 +321,4 @@ export function getCleaningAdvice(domain: string, recommendedTypes: DataType[]):
                 return `建议清理${types}以提升浏览体验和加快网页加载速度`;
             }
     }
-} 
+}

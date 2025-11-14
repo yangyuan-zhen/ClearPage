@@ -45,6 +45,7 @@ const loadRules = async (): Promise<CleaningRule[]> => {
 
 const SettingsPanel: React.FC = () => {
   const { t, currentLang } = useI18n();
+  const [manifestInfo, setManifestInfo] = useState<{ name: string; version: string } | null>(null);
 
   const [rules, setRules] = useState<CleaningRule[]>([]);
   const [editingRule, setEditingRule] = useState<CleaningRule | null>(null);
@@ -117,6 +118,13 @@ const SettingsPanel: React.FC = () => {
       setRules(savedRules);
     };
     fetchRules();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const m = chrome.runtime.getManifest();
+      setManifestInfo({ name: m.name, version: m.version });
+    } catch {}
   }, []);
 
   // 保存规则的变更
@@ -870,9 +878,9 @@ const SettingsPanel: React.FC = () => {
               </svg>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  ClearPage 浏览器插件
+                  {manifestInfo?.name || "ClearPage"}
                 </h2>
-                <p className="text-sm text-gray-600">版本 1.0.10</p>
+                <p className="text-sm text-gray-600">版本 {manifestInfo?.version || ""}</p>
               </div>
             </div>
 

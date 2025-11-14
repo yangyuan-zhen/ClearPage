@@ -17,6 +17,8 @@
 - 🎨 现代化渐变设计，隐藏滚动条
 - 📈 集成性能检测，了解优化效果
 - ⏱️ 自定义清理规则并可立即执行
+- ♿ 无障碍支持（焦点可见、键盘可导航、对比度优化）
+- 🧩 统一组件样式（按钮/输入/下拉/卡片），响应式布局与过渡动效
 
 ## 📸 产品截图
 
@@ -95,11 +97,53 @@ npm test
 - 插件仅对当前打开的网站生效
 - 建议在使用前确认要清理的数据类型
 
+## 🚑 版本修复计划（Release Fix Plan）
+
+### 目标
+
+- 恢复近 30 天活跃与留存，降低卸载率，提升商店评分与转化
+
+### 增强项（P2，T+6–10 天）
+
+- 智能清理策略：结合域名类型（`smartCleanUtils`）为门户/登录站默认保留 Cookies
+  - 代码：`src/utils/smartCleanUtils.ts:192`
+
+### 实施清单（代码位置）
+
+- 默认类型：`src/components/CacheClearButton.tsx:24` 改为 `["cache"]`
+- 二次确认与白名单：`src/components/CacheClearButton.tsx:309, 348`
+- 弹窗布局：`src/components/App.tsx:104`
+- 版本读取与统一：`src/components/SettingsPanel.tsx:875`、`public/manifest.json`
+- 特殊页禁测：`src/components/PerformancePanel.tsx:236-273`
+- 全局类型警示（UI）：`src/components/CacheClearButton.tsx` 数据类型描述区
+- 批处理与日志：`src/services/dataClearingService.ts:110-116, 186-219`
+
+### 验证指标
+
+- 次日留存、7 日留存、卸载率、商店评分
+- 清理后自动刷新率、错误提示出现率、性能页特殊页面占比
+
+### 发布与回滚
+
+- 灰度发布（少量用户），观察指标后全量
+- 关键项加 Feature Flag，异常即回滚：恢复默认选择/关闭禁测策略
+
 ## 📝 许可证
 
 MIT License
 
 ## 📅 更新日志
+
+### 2025-11-15
+
+**界面与可用性更新**
+
+- 弹窗固定高度 `600px`，宽度响应式 `520–640px`（`src/components/App.tsx:104`）
+- 侧边栏宽度缩减并更协调：`w-36/sm:w-40/md:w-44`（`src/components/App.tsx:106`）
+- 左侧导航文字强制单行，避免换行导致排版断裂（`src/styles/tailwind.css:26-32`）
+- 统一组件样式规范与焦点可见无障碍（`src/styles/tailwind.css`）
+- 导航增加可访问属性：`role="navigation"`、`aria-current`（`src/components/App.tsx:113-126`）
+- 移除清理历史记录功能以简化权限与复杂度（`src/services/historyService.ts` 已删除）
 
 ### 2025-11-06
 

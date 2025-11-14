@@ -101,16 +101,16 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-[500px] min-w-[800px] max-w-[800px] bg-white">
+    <div className="flex h-[600px] min-w-[520px] max-w-[640px] bg-white">
       {/* 侧边栏导航 */}
-      <div className="flex flex-col w-64 bg-gray-100 border-r border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-primary">
+      <div className="flex flex-col w-36 border-r sm:w-40 md:w-44 bg-muted border-border">
+        <div className="p-4 border-b border-border">
+          <h1 className="text-lg font-bold text-slate-900">
             {t("appTitle", "网页清理工具")}
           </h1>
         </div>
 
-        <nav className="flex-1 px-3 mt-6">
+        <nav className="flex-1 px-3 mt-6" role="navigation" aria-label={currentLang === "zh_CN" ? "主导航" : "Main Navigation"}>
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.id}>
@@ -120,11 +120,10 @@ const App: React.FC = () => {
                       item.id as "clean" | "performance" | "settings"
                     )
                   }
-                  className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === item.id
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:bg-gray-200"
+                  className={`sidebar-item ${
+                    activeTab === item.id ? "sidebar-item-active" : ""
                   }`}
+                  aria-current={activeTab === item.id ? "page" : undefined}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {item.label}
@@ -144,7 +143,7 @@ const App: React.FC = () => {
                 className={`flex-1 py-2 px-2 text-xs rounded-md ${
                   currentLang === "zh_CN"
                     ? "bg-primary text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
                 }`}
               >
                 中文
@@ -154,7 +153,7 @@ const App: React.FC = () => {
                 className={`flex-1 py-2 px-2 text-xs rounded-md ${
                   currentLang === "en"
                     ? "bg-primary text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
                 }`}
               >
                 English
@@ -166,7 +165,7 @@ const App: React.FC = () => {
           <div className="px-1 mt-8">
             <button
               onClick={openLandingPage}
-              className="flex items-center w-full px-4 py-2.5 text-sm font-medium border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex items-center w-full px-4 py-2.5 text-sm font-medium border border-border text-primary rounded-lg hover:bg-slate-100 transition-colors"
             >
               <svg
                 className="mr-2 w-5 h-5"
